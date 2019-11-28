@@ -37,8 +37,13 @@ help:
 
 all: EventWrapper
 
-EventWrapper: 
-	$(CXX) $(CPPFLAGS) -o EventWrapper pyevent.cpp $(EXTRALIBS)
+EventWrapper: pyevent.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o EventWrapper pyevent.cpp $(OBJS) $(EXTRALIBS)
+	$(RM) pyevent.o $(OBJS)
+
+PlotCollectedPE: PlotCollectedPE.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o PlotCollectedPE PlotCollectedPE.cc $(OBJS) $(EXTRALIBS)
+	$(RM) PlotCollectedPE.o $(OBJS)
 
 clean:
-	$(RM) EventWrapper
+	$(RM) $(OBJS) EventWrapper PlotCollectedPE

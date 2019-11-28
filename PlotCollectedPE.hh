@@ -1,0 +1,11 @@
+//
+// Created by zsoldos on 11/26/19.
+//
+
+#ifndef EVENTWRAPPER__PLOTCOLLECTEDPE_HH_
+#define EVENTWRAPPER__PLOTCOLLECTEDPE_HH_
+
+TTree *ExtractTree();
+
+#endif //EVENTWRAPPER__PLOTCOLLECTEDPE_HH_
+

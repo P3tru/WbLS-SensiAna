@@ -44,8 +44,11 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 #----------------------------------------------------------------------------
 # Add the executable
 #
-add_executable(EventWrapper pyevent.cpp)
+add_executable(EventWrapper pyevent.cpp ${sources} ${headers})
 target_link_libraries(EventWrapper ${ROOT_LIBRARIES} -lRATEvent)
 
-#add_executable(EventWrapper pyevent.cpp ${sources} ${headers})
-#target_link_libraries(EventWrapper ${ROOT_LIBRARIES} -lRATEvent)
+add_executable(PlotCollectedPE PlotCollectedPE.cc ${sources} ${headers})
+target_link_libraries(PlotCollectedPE ${ROOT_LIBRARIES} -lRATEvent)
+
+add_executable(macro_test macros/PlotCollectedPE.c ${sources} ${headers})
+target_link_libraries(macro_test ${ROOT_LIBRARIES} -lRATEvent)
