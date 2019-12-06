@@ -17,6 +17,7 @@
 /////////////////////////   RAT   ///////////////////////////
 #include <RAT/DS/MC.hh>
 #include <RAT/DS/Root.hh>
+#include <boost/filesystem/path.hpp>
 
 /////////////////////////   USER   //////////////////////////
 #include "../ProgressBar.hpp"
@@ -67,48 +68,66 @@ class TFileAnalysis {
   void DoAnalysis(void (*func)(RAT::DS::MC *mc, T *Hist)){
 
 	auto *f = new TFile(filename.c_str());
-	auto *tree = (TTree*) f->Get("T");
 
-	auto *rds = new RAT::DS::Root();
-	tree->SetBranchAddress("ds", &rds);
+	if(f->IsOpen()){
 
-	int nEvents = tree->GetEntries();
+	  ////////////////////////////////
+	  // IF file is open do stuff ////
+	  ////////////////////////////////
 
-	ProgressBar progressBar(nEvents, 70);
+	  auto *tree = (TTree*) f->Get("T");
 
-	for (int iEvt = 0; iEvt < nEvents; iEvt++) {
-	  tree->GetEntry(iEvt);
+	  auto *rds = new RAT::DS::Root();
+	  tree->SetBranchAddress("ds", &rds);
 
-	  // record the tick
-	  ++progressBar;
+	  int nEvents = tree->GetEntries();
 
-	  // Access RAT MC info and the summary
-	  RAT::DS::MC * mc = rds->GetMC();
+	  ProgressBar progressBar(nEvents, 70);
 
-	  // #### #### #### #### //
-	  // Here we can now insert function which takes mc in input
-	  // and then extract information and fill an histogram.
+	  for (int iEvt = 0; iEvt < nEvents; iEvt++) {
+		tree->GetEntry(iEvt);
 
-	  if(func){
-		func(mc,Hist);
-	  } else {
-		cout << "NO ANALYSIS PROVIDED" << endl;
-		exit(EXIT_FAILURE);
-	  }
+		// record the tick
+		++progressBar;
 
-	  // display the bar
-	  progressBar.display();
+		// Access RAT MC info and the summary
+		RAT::DS::MC * mc = rds->GetMC();
 
-	} // END FOR iEvt
+		// #### #### #### #### //
+		// Here we can now insert function which takes mc in input
+		// and then extract information and fill an histogram.
 
-	// Prevent memory leaks
-	// From file
-	f->Close();
+		if(func){
+		  func(mc,Hist);
+		} else {
+		  cout << "NO ANALYSIS PROVIDED" << endl;
+		  exit(EXIT_FAILURE);
+		}
 
-	// From TTree
-	delete rds;
+		// display the bar
+		progressBar.display();
 
-	delete f;
+	  } // END FOR iEvt
+
+	  // Prevent memory leaks
+	  // From file
+	  f->Close();
+
+	  // From TTree
+	  delete rds;
+
+	  delete f;
+
+	} else {
+
+	  ////////////////////////////////////////////////////
+	  // Warn user if there's a problem with the file ////
+	  ////////////////////////////////////////////////////
+
+	  boost::filesystem::path p(filename);
+	  cout << "FILE " << p.string() << " not open. Skip..." << endl;
+	}
+
 
   };
 

@@ -23,8 +23,8 @@
 void CollectPEAndHits(RAT::DS::MC *mc, TH2D *Hist){
 
   // Get Nb of PMTs which at least 1hit
-  const int nbPMTsHits = mc->GetMCPMTCount();
   const int nbPE = mc->GetNumPE();
+  const int nbPMTsHits = mc->GetMCPMTCount();
 
   if(Hist)
 	Hist->Fill(nbPE, nbPMTsHits);
@@ -56,6 +56,30 @@ std::string ExtractFilenameFromPath(std::string pathname){
   return p.filename().string();
 
 }
+
+std::vector<double> CorrectEbinsRange(std::vector<double> inputArray){
+
+  std::vector<double> output;
+  output.resize(inputArray.size()+1);
+
+  double DeltaBin0 = inputArray[1] - inputArray[0];
+
+  output[0] = inputArray[0] - DeltaBin0/2;
+
+  for(int i = 1; i<inputArray.size(); i++){
+
+    output[i] = inputArray[i-1] + (inputArray[i] - inputArray[i-1])/2;
+
+  }
+
+  output[inputArray.size()] =
+	  inputArray[inputArray.size()-1] +
+		  (inputArray[inputArray.size()-1] - inputArray[inputArray.size()-2])/2;
+
+  return output;
+
+}
+
 
 #endif // _CREATEERSMATRIX_HH_
 

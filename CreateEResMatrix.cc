@@ -4,6 +4,7 @@
 
 ///////////////////////// STL C/C++ /////////////////////////
 #include <vector>
+#include <algorithm>
 
 /////////////////////////   ROOT   //////////////////////////
 #include <TApplication.h>
@@ -63,19 +64,33 @@ int main(int argc, char *argv[]) {
   // Create TApp
   TApplication theApp("App", &argc, argv);
 
+  // Set basic ROOT style
+  gStyle->SetOptStat(0);
+  gStyle->SetPalette(56);
+
   // Create ifstream for input file
   string inputName;
   ProcessArgs(&theApp,&inputName);
 
+  // Get ready to read inside inputName
+  // each file name
   string line;
   ifstream file(inputName);
 
+  // Create a FileAnalysis for each file
+  // to be processed
   vector< TFileAnalysis<TH2D> > FileAnalysis;
   int NbFileAnalysis = 0;
 
+  // Save each Ebins
+  vector<double> Ebins;
+
   while ( getline(file,line) ){
 	FileAnalysis.emplace_back(line);
-	FileAnalysis[NbFileAnalysis].SetEBin(ExtractEBinFromFilename(line));
+	double E = ExtractEBinFromFilename(line);
+	FileAnalysis[NbFileAnalysis].SetEBin(E);
+
+	Ebins.emplace_back(E);
 
 	cout << "ADD " << ExtractFilenameFromPath(line) << endl;
 	cout << "-> Corresponding to Ebin: " << ExtractEBinFromFilename(line) << endl;
@@ -84,16 +99,30 @@ int main(int argc, char *argv[]) {
   }
 
   TH2D *hNbPEVSHits;
+  TH1D *hNbPE;
+  TH2D *hEMatrix;
 
-  vector<double> Ebins;
+  sort(Ebins.begin(),Ebins.end());
+  vector<double> corEbins = CorrectEbinsRange(Ebins);
+
+  const int nbBinsPE = 201;
+  const double minPE = -0.5;
+  const double maxPE = 200.5;
+
+  hEMatrix = new TH2D("hEMatrix", "Transition matrix describing the energy response of the detector",
+					  nbBinsPE,minPE,maxPE,
+					  Ebins.size(),&corEbins[0]);
+
   vector<double> Eres;
 
   TCanvas *c1;
 
   for(auto& file : FileAnalysis){
 
-	hNbPEVSHits = new TH2D(Form("hEbin%.1f", file.GetEBin()),"Prout",
-						   1001,-0.5,1000.5,
+    cout << "PROCESSING atm " << ExtractFilenameFromPath(file.GetFilename()) << endl;
+
+	hNbPEVSHits = new TH2D(Form("hEbin%.1f", file.GetEBin()),"Nb PE Collected VS Nb PMTs Hits",
+						   nbBinsPE,minPE,maxPE,
 						   1001,-0.5,1000.5);
 
 	file.SetHist(hNbPEVSHits);
@@ -101,10 +130,29 @@ int main(int argc, char *argv[]) {
 	file.DoAnalysis(CollectPEAndHits);
 
 	///////////////////////////////
+	// Recover hnPE projection   //
+	///////////////////////////////
+
+	hNbPE = (TH1D*)file.GetHist()->ProjectionX()->Clone();
+
+	///////////////////////////////
+	// FILL transition matrix    //
+	///////////////////////////////
+
+	for(int iBin=1; iBin<nbBinsPE; iBin++){
+
+	  double BinPE = hNbPE->GetBinCenter(iBin);
+	  double BinPEContent = hNbPE->GetBinContent(iBin);
+	  double BinE = file.GetEBin();
+
+	  hEMatrix->Fill(BinPE, BinE, BinPEContent);
+
+	}
+
+	///////////////////////////////
 	// FIT and recover res. info //
 	///////////////////////////////
 
-	TH1D *hNbPE = (TH1D*)file.GetHist()->ProjectionX()->Clone();
 	hNbPE->Fit("gaus","0LQSEM+");
 	TF1 *fFit = hNbPE->GetFunction("gaus");
 	double chi2 = fFit->GetChisquare();
@@ -114,19 +162,22 @@ int main(int argc, char *argv[]) {
 	double sigma = fFit->GetParameter(2);
 	double sigmaErr = fFit->GetParError(2);
 
-	Ebins.emplace_back(file.GetEBin());
-	Eres.emplace_back(sigma/mean);
-
-	c1 = new TCanvas(Form("cEbin%f", file.GetEBin()),Form("cEbin%f", file.GetEBin()),
-					 800,600);
-	c1->SetGrid();
-
-	file.GetHist()->Draw("COLZ");
+//	c1 = new TCanvas(Form("cEbin%.1fMeV2D", file.GetEBin()),Form("cEbin%.1fMeV2D", file.GetEBin()),
+//					 800,600);
+//	c1->SetGrid();
+//	file.GetHist()->Draw("COLZ");
+//
+//	c1 = new TCanvas(Form("cEbin%.1fMeV1D", file.GetEBin()),Form("cEbin%.1fMeV1D", file.GetEBin()),
+//					 800,600);
+//	c1->SetGrid();
+//	hNbPE->Draw("COLZ");
 
   }
 
-  TH2D *hEMatrix = new TH2D();
 
+  c1 = new TCanvas("cEMatrix", "cEMatrix", 800,600);
+  c1->SetGrid();
+  hEMatrix->Draw("COLZ");
 
   /////////////////////////
   // ...
