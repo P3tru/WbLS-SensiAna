@@ -22,9 +22,15 @@ ROOTLIBS   := $(shell root-config --libs)
 RATROOT := /home/zsoldos/theia/rat-pac-chess
 RATLIBS  := -L$(RATROOT)/lib -lRATEvent
 
+### BOOST
+BOOSTCFLAGS := -I/usr/include/boost/
+BOOSTLIBS   := -lboost_system -lboost_filesystem
+
 CPPFLAGS  += -I$(ROOTSYS)/include -I$(INCDIR) $(ROOTCFLAGS) -I$(RATROOT)/include
+CPPFLAGS  +=  $(BOOSTCFLAGS)
 EXTRALIBS  = $(ROOTLIBS)
 EXTRALIBS += $(RATLIBS)
+EXTRALIBS += $(BOOSTLIBS)
 
 SRCS = $(wildcard $(SRCDIR)/*.cc)
 OBJS = $(subst .cc,.o,$(SRCS))
@@ -35,7 +41,11 @@ OBJS = $(subst .cc,.o,$(SRCS))
 help:
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-all: EventWrapper
+all: TemplateAnalysis
+
+TemplateAnalysis: TemplateAnalysis.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o TemplateAnalysis TemplateAnalysis.cc $(OBJS) $(EXTRALIBS)
+	$(RM) TemplateAnalysis.o $(OBJS)
 
 EventWrapper: pyevent.o $(OBJS)
 	$(CXX) $(CPPFLAGS) -o EventWrapper pyevent.cpp $(OBJS) $(EXTRALIBS)
@@ -45,5 +55,9 @@ PlotCollectedPE: PlotCollectedPE.o $(OBJS)
 	$(CXX) $(CPPFLAGS) -o PlotCollectedPE PlotCollectedPE.cc $(OBJS) $(EXTRALIBS)
 	$(RM) PlotCollectedPE.o $(OBJS)
 
+CreateEResMatrix: CreateEResMatrix.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o CreateEResMatrix CreateEResMatrix.cc $(OBJS) $(EXTRALIBS)
+	$(RM) CreateEResMatrix.o $(OBJS)
+
 clean:
-	$(RM) $(OBJS) EventWrapper PlotCollectedPE
+	$(RM) $(OBJS) EventWrapper PlotCollectedPE CreateEResMatrix
