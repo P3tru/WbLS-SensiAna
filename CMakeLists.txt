@@ -19,12 +19,15 @@ endif()
 #---Define useful ROOT functions and macros (e.g. ROOT_GENERATE_DICTIONARY)
 #include(${ROOT_USE_FILE})
 
+find_package(Boost 1.57.0 COMPONENTS system filesystem REQUIRED)
+
 #----------------------------------------------------------------------------
 # Locate sources and headers for this project
 # ## NOT NEEDED FOR DICT
 include_directories(
         ${PROJECT_SOURCE_DIR}/include
         ${ROOT_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIRS}
         $ENV{RATROOT}/include
 )
 
@@ -44,11 +47,14 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 #----------------------------------------------------------------------------
 # Add the executable
 #
+add_executable(TemplateAnalysis TemplateAnalysis.cc ${sources} ${headers})
+target_link_libraries(TemplateAnalysis ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
+
 add_executable(EventWrapper pyevent.cpp ${sources} ${headers})
-target_link_libraries(EventWrapper ${ROOT_LIBRARIES} -lRATEvent)
+target_link_libraries(EventWrapper ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
 
 add_executable(PlotCollectedPE PlotCollectedPE.cc ${sources} ${headers})
-target_link_libraries(PlotCollectedPE ${ROOT_LIBRARIES} -lRATEvent)
+target_link_libraries(PlotCollectedPE ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
 
-add_executable(macro_test macros/PlotCollectedPE.c ${sources} ${headers})
-target_link_libraries(macro_test ${ROOT_LIBRARIES} -lRATEvent)
+add_executable(CreateEResMatrix CreateEResMatrix.cc ${sources} ${headers})
+target_link_libraries(CreateEResMatrix ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
