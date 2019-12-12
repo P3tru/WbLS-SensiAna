@@ -9,15 +9,19 @@
 #include <iostream>
 #include <cstdarg>
 #include <string>
+#include <thread>
+
+/////////////////////////   BOOST   /////////////////////////
+#include <boost/filesystem/path.hpp>
 
 /////////////////////////   ROOT   //////////////////////////
+#include <TROOT.h>
 #include <TFile.h>
 #include <TTree.h>
 
 /////////////////////////   RAT   ///////////////////////////
 #include <RAT/DS/MC.hh>
 #include <RAT/DS/Root.hh>
-#include <boost/filesystem/path.hpp>
 
 /////////////////////////   USER   //////////////////////////
 #include "../ProgressBar.hpp"
@@ -33,6 +37,9 @@ class TFileAnalysis {
   // name, vtx position and E can be extracted from filename
   string filename;
   double eBin;
+
+  // Unique ID
+  int ID;
 
   // Hist
   T *Hist;
@@ -55,7 +62,6 @@ class TFileAnalysis {
 	Hist = (T*)h->Clone();
   };
 
-
   // #### #### #### #### #### #### #### #### #### //
   // #### ####     DO ANALYSIS          #### #### //
   // #### #### #### #### #### #### #### #### #### //
@@ -66,6 +72,13 @@ class TFileAnalysis {
   // One gives in argument a function of MC parameters and
   // histogram to fill
   void DoAnalysis(void (*func)(RAT::DS::MC *mc, T *Hist)){
+
+	// First enable implicit multi-threading globally, so that the implicit parallelisation is on.
+	// The parameter of the call specifies the number of threads to use.
+	unsigned kThreadsSupported = std::thread::hardware_concurrency();
+	unsigned kNumthreads = (kThreadsSupported>0) ? kThreadsSupported : 1;
+	ROOT::EnableImplicitMT(kNumthreads);
+	cout << "Num thread enabled: " << kNumthreads << endl;
 
 	auto *f = new TFile(filename.c_str());
 
@@ -151,6 +164,13 @@ class TFileAnalysis {
   }
   void SetEBin(double e_bin) {
 	eBin = e_bin;
+  }
+
+  int GetID() const {
+	return ID;
+  }
+  void SetID(int id) {
+	ID = id;
   }
 
 };
