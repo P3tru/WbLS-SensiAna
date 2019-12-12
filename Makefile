@@ -19,7 +19,7 @@ ROOTCFLAGS := $(shell root-config --cflags)
 ROOTLIBS   := $(shell root-config --libs)
 
 ### RAT
-RATROOT := /home/zsoldos/theia/rat-pac-chess
+RATROOT := /home/zsoldos/theia/rat-pac
 RATLIBS  := -L$(RATROOT)/lib -lRATEvent
 
 ### BOOST
@@ -59,5 +59,9 @@ CreateEResMatrix: CreateEResMatrix.o $(OBJS)
 	$(CXX) $(CPPFLAGS) -o CreateEResMatrix CreateEResMatrix.cc $(OBJS) $(EXTRALIBS)
 	$(RM) CreateEResMatrix.o $(OBJS)
 
+CreatePosMatrix: CreatePosMatrix.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o CreatePosMatrix CreatePosMatrix.cc $(OBJS) $(EXTRALIBS)
+	$(RM) CreatePosMatrix.o $(OBJS)
+
 clean:
-	$(RM) $(OBJS) EventWrapper PlotCollectedPE CreateEResMatrix
+	$(RM) $(OBJS) EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix

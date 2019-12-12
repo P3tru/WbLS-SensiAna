@@ -58,3 +58,6 @@ target_link_libraries(PlotCollectedPE ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRAT
 
 add_executable(CreateEResMatrix CreateEResMatrix.cc ${sources} ${headers})
 target_link_libraries(CreateEResMatrix ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
+
+add_executable(CreatePosMatrix CreatePosMatrix.cc ${sources} ${headers})
+target_link_libraries(CreatePosMatrix ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)

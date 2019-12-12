@@ -1,9 +1,9 @@
 //
-// Created by zsoldos on 11/26/19.
+// Created by zsoldos on 12/5/19.
 //
 
-#ifndef _CREATEERSMATRIX_HH_
-#define _CREATEERSMATRIX_HH_
+#ifndef _CREATEPOSMATRIX_HH_
+#define _CREATEPOSMATRIX_HH_
 
 ///////////////////////// STL C/C++ /////////////////////////
 #include <fstream>
@@ -85,7 +85,7 @@ void ProcessArgs(TApplication *theApp, string *filename,
 
 }
 
-double ExtractEBinFromFilename(const std::string& filename){
+double ExtractPosBinFromFilename(const std::string& filename){
 
   std::vector <std::string> tokens;
   std::stringstream sname(filename);
@@ -96,15 +96,14 @@ double ExtractEBinFromFilename(const std::string& filename){
 	tokens.push_back(intermediate);
   }
 
-  // Extract float from token using regex
+  // Extract integer from token using regex
   std::smatch m;
-  std::regex e (R"(\d+\.\d+)");   // matches floats inside filename
-  std::regex_search (tokens[tokens.size()-3],m,e);
+  std::regex e (R"(\d+)");   // matches floats inside filename
+  std::regex_search (tokens[tokens.size()-2],m,e);
   return std::stod(m.str());
 
 }
 
 
 
-#endif // _CREATEERSMATRIX_HH_
-
+#endif //_CREATEPOSMATRIX_HH_

@@ -14,6 +14,8 @@
 /////////////////////////   USER   //////////////////////////
 #include "TFileAnalysis.hh"
 #include "TemplateAnalysis.hh"
+#include "AnalysisDefinitions.hh"
+#include "utils.hh"
 
 using namespace std;
 
@@ -81,6 +83,12 @@ int main(int argc, char *argv[]) {
   FileAnalysis.SetHist(hNbPEVSHits);
 
   FileAnalysis.DoAnalysis(CollectPEAndHits);
+
+  // #### #### #### #### #### #### #### #### #### #### #### #### //
+  // ####                      DRAWING                      #### //
+  // #### #### #### #### #### #### #### #### #### #### #### #### //
+
+  auto *c1 = new TCanvas("c1","c1",800,600);
 
   FileAnalysis.GetHist()->Draw("COLZ");
 

@@ -1,23 +1,21 @@
 //
-// Created by zsoldos on 11/26/19.
+// Created by zsoldos on 12/5/19.
 //
 
 ///////////////////////// STL C/C++ /////////////////////////
-#include <vector>
-#include <algorithm>
+#include <string>
 
 /////////////////////////   ROOT   //////////////////////////
 #include <TApplication.h>
 #include <TStyle.h>
 #include <TCanvas.h>
-#include <TF1.h>
+#include <TH2D.h>
 
 /////////////////////////   USER   //////////////////////////
 #include "TFileAnalysis.hh"
+#include "CreatePosMatrix.hh"
 #include "AnalysisDefinitions.hh"
 #include "utils.hh"
-
-#include "CreateEResMatrix.hh"
 
 using namespace std;
 
@@ -55,38 +53,38 @@ int main(int argc, char *argv[]) {
   vector< TFileAnalysis<TH2D> > FileAnalysis;
   int NbFileAnalysis = 0;
 
-  // Save each Ebins
-  vector<double> Ebins;
+  // Save each PosBins
+  vector<double> Posbins;
+
 
   while ( getline(file,line) ){
 
-    if (line.compare(0,1,"#") == 0){
+	if (line.compare(0,1,"#") == 0){
 
 	  continue;
 
-    } else {
+	} else {
 
 	  FileAnalysis.emplace_back(line);
-	  double E = ExtractEBinFromFilename(line);
-	  FileAnalysis[NbFileAnalysis].SetEBin(E);
+	  double Pos = ExtractPosBinFromFilename(line);
 
-	  Ebins.emplace_back(E);
+	  FileAnalysis[NbFileAnalysis].SetID(Pos);
+	  Posbins.emplace_back(Pos);
 
 	  cout << "ADD " << ExtractFilenameFromPath(line) << endl;
-	  cout << "-> Corresponding to Ebin: " << ExtractEBinFromFilename(line) << endl;
+	  cout << "-> Corresponding to Position: " << Pos << "mm" << endl;
 
 	  NbFileAnalysis++;
 
-    }
+	}
 
   } // END while
 
   TH2D *hNbPEVSHits;
-  TH1D *hNbPE;
-  TH2D *hEMatrix;
+  TH2D *hNbPEVSPos;
 
-  sort(Ebins.begin(),Ebins.end());
-  vector<double> corEbins = CorrectBinRangeArray(Ebins);
+  sort(Posbins.begin(),Posbins.end());
+  vector<double> corBins = CorrectBinRangeArray(Posbins);
 
   const int nbBinsPE = (User_nPEBins>-1) ? User_nPEBins : 201;
   const double minPE = (User_minPE>-1) ? User_minPE : -0.5;
@@ -97,22 +95,18 @@ int main(int argc, char *argv[]) {
   const double maxPMT = (User_maxPMT>-1) ? User_maxPMT : 200.5;
 
 
-  hEMatrix = new TH2D("hEMatrix", "Transition matrix describing the energy response of the detector",
-					  Ebins.size(),&corEbins[0],
-					  nbBinsPE,minPE,maxPE);
-
-  vector<double> Eres;
-
-  TCanvas *c1;
+  hNbPEVSPos = new TH2D("hNbPEVSPos", "PE collection VS position of the vtx",
+						nbBinsPE,minPE,maxPE,
+						Posbins.size(),&corBins[0]);
 
   auto fOutputName = (!User_fOutput.empty()) ? User_fOutput : "output.root";
   auto *fOutput = new TFile(fOutputName.c_str(),"RECREATE");
 
   for(auto& file : FileAnalysis){
 
-    cout << "PROCESSING atm " << ExtractFilenameFromPath(file.GetFilename()) << endl;
+	cout << "PROCESSING atm " << ExtractFilenameFromPath(file.GetFilename()) << endl;
 
-	hNbPEVSHits = new TH2D(Form("hEbin%.1f", file.GetEBin()),"Nb PE Collected VS Nb PMTs Hits",
+	hNbPEVSHits = new TH2D(Form("hEbin%.1d", file.GetID()),"Nb PE Collected VS Nb PMTs Hits",
 						   nbBinsPE,minPE,maxPE,
 						   nbBinsPMT,minPMT,maxPMT);
 
@@ -121,18 +115,11 @@ int main(int argc, char *argv[]) {
 	file.DoAnalysis(CollectPEAndHits);
 
 	///////////////////////////////
-	// Recover hnPE projection   //
-	///////////////////////////////
-
-	hNbPE = (TH1D*)file.GetHist()->ProjectionX()->Clone();
-
-	///////////////////////////////
 	// Save all plots in ROOT    //
 	///////////////////////////////
 
 	fOutput->cd();
 	hNbPEVSHits->Write();
-	hNbPE->Write();
 
 	///////////////////////////////
 	// FILL transition matrix    //
@@ -140,53 +127,31 @@ int main(int argc, char *argv[]) {
 
 	for(int iBin=1; iBin<nbBinsPE; iBin++){
 
-	  double BinPE = hNbPE->GetBinCenter(iBin);
-	  double BinPEContent = hNbPE->GetBinContent(iBin);
-	  double BinE = file.GetEBin();
+	  double BinPE = hNbPEVSHits->ProjectionX()->GetBinCenter(iBin);
+	  double BinPEContent = hNbPEVSHits->ProjectionX()->GetBinContent(iBin);
+	  double BinPos = file.GetID();
 
-	  hEMatrix->Fill(BinE, BinPE, BinPEContent);
+	  hNbPEVSPos->Fill(BinPE, BinPos, BinPEContent);
 
 	}
 
-	///////////////////////////////
-	// FIT and recover res. info //
-	///////////////////////////////
-
-	hNbPE->Fit("gaus","0LQSEM+");
-	TF1 *fFit = hNbPE->GetFunction("gaus");
-	double chi2 = fFit->GetChisquare();
-	double c = fFit->GetParameter(0);
-	double mean = fFit->GetParameter(1);
-	double meanErr = fFit->GetParError(1);
-	double sigma = fFit->GetParameter(2);
-	double sigmaErr = fFit->GetParError(2);
-
-//	c1 = new TCanvas(Form("cEbin%.1fMeV2D", file.GetEBin()),Form("cEbin%.1fMeV2D", file.GetEBin()),
-//					 800,600);
-//	c1->SetGrid();
-//	file.GetHist()->Draw("COLZ");
-//
-//	c1 = new TCanvas(Form("cEbin%.1fMeV1D", file.GetEBin()),Form("cEbin%.1fMeV1D", file.GetEBin()),
-//					 800,600);
-//	c1->SetGrid();
-//	hNbPE->Draw("COLZ");
-
   }
 
-  hEMatrix->Write();
+  // #### #### #### #### #### #### #### #### #### #### #### #### //
+  // ####                      DRAWING                      #### //
+  // #### #### #### #### #### #### #### #### #### #### #### #### //
 
-  c1 = new TCanvas("cEMatrix", "cEMatrix", 800,600);
-  c1->SetGrid();
-  hEMatrix->Draw("COLZ");
+  auto *c1 = new TCanvas("c1","c1",800,600);
+  hNbPEVSPos->Draw("COLZ");
+
 
   /////////////////////////
   // ...
-
-  fOutput->Close();
 
   cout << endl;
   cout << "Hit Ctrl+C to exit" << endl;
   theApp.Run(kTRUE);
 
   return 0;
+
 }
