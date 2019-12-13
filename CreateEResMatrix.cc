@@ -101,8 +101,6 @@ int main(int argc, char *argv[]) {
 					  Ebins.size(),&corEbins[0],
 					  nbBinsPE,minPE,maxPE);
 
-  vector<double> Eres;
-
   TCanvas *c1;
 
   auto fOutputName = (!User_fOutput.empty()) ? User_fOutput : "output.root";

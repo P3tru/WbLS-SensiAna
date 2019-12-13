@@ -39,7 +39,7 @@ class TFileAnalysis {
   double eBin;
 
   // Unique ID
-  int ID;
+  double ID;
 
   // Hist
   T *Hist;
@@ -73,12 +73,11 @@ class TFileAnalysis {
   // histogram to fill
   void DoAnalysis(void (*func)(RAT::DS::MC *mc, T *Hist)){
 
-	// First enable implicit multi-threading globally, so that the implicit parallelisation is on.
-	// The parameter of the call specifies the number of threads to use.
-	unsigned kThreadsSupported = std::thread::hardware_concurrency();
-	unsigned kNumthreads = (kThreadsSupported>0) ? kThreadsSupported : 1;
-	ROOT::EnableImplicitMT(kNumthreads);
-	cout << "Num thread enabled: " << kNumthreads << endl;
+//	// First enable implicit multi-threading globally, so that the implicit parallelisation is on.
+//	// The parameter of the call specifies the number of threads to use.
+//	unsigned kThreadsSupported = std::thread::hardware_concurrency();
+//	unsigned kNumthreads = (kThreadsSupported>0) ? kThreadsSupported : 1;
+//	ROOT::EnableImplicitMT(kNumthreads);
 
 	auto *f = new TFile(filename.c_str());
 
@@ -166,10 +165,10 @@ class TFileAnalysis {
 	eBin = e_bin;
   }
 
-  int GetID() const {
+  double GetID() const {
 	return ID;
   }
-  void SetID(int id) {
+  void SetID(double id) {
 	ID = id;
   }
 

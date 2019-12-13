@@ -56,7 +56,6 @@ int main(int argc, char *argv[]) {
   // Save each PosBins
   vector<double> Posbins;
 
-
   while ( getline(file,line) ){
 
 	if (line.compare(0,1,"#") == 0){
@@ -67,8 +66,8 @@ int main(int argc, char *argv[]) {
 
 	  FileAnalysis.emplace_back(line);
 	  double Pos = ExtractPosBinFromFilename(line);
-
 	  FileAnalysis[NbFileAnalysis].SetID(Pos);
+
 	  Posbins.emplace_back(Pos);
 
 	  cout << "ADD " << ExtractFilenameFromPath(line) << endl;
@@ -81,6 +80,7 @@ int main(int argc, char *argv[]) {
   } // END while
 
   TH2D *hNbPEVSHits;
+  TH1D *hNbPE;
   TH2D *hNbPEVSPos;
 
   sort(Posbins.begin(),Posbins.end());
@@ -97,29 +97,38 @@ int main(int argc, char *argv[]) {
 
   hNbPEVSPos = new TH2D("hNbPEVSPos", "PE collection VS position of the vtx",
 						nbBinsPE,minPE,maxPE,
-						Posbins.size(),&corBins[0]);
+						corBins.size()-1,&corBins[0]);
 
   auto fOutputName = (!User_fOutput.empty()) ? User_fOutput : "output.root";
   auto *fOutput = new TFile(fOutputName.c_str(),"RECREATE");
 
-  for(auto& file : FileAnalysis){
+  TCanvas *c1;
 
-	cout << "PROCESSING atm " << ExtractFilenameFromPath(file.GetFilename()) << endl;
+  for(auto& itFile : FileAnalysis){
 
-	hNbPEVSHits = new TH2D(Form("hEbin%.1d", file.GetID()),"Nb PE Collected VS Nb PMTs Hits",
+	cout << "PROCESSING atm " << ExtractFilenameFromPath(itFile.GetFilename()) << endl;
+
+	hNbPEVSHits = new TH2D(Form("hPosBin%.0fmm", itFile.GetID()),"Nb PE Collected VS Nb PMTs Hits",
 						   nbBinsPE,minPE,maxPE,
 						   nbBinsPMT,minPMT,maxPMT);
 
-	file.SetHist(hNbPEVSHits);
+	itFile.SetHist(hNbPEVSHits);
 
-	file.DoAnalysis(CollectPEAndHits);
+	itFile.DoAnalysis(CollectPEAndHits);
+
+	///////////////////////////////
+	// Recover hnPE projection   //
+	///////////////////////////////
+
+	hNbPE = (TH1D*)itFile.GetHist()->ProjectionX()->Clone();
 
 	///////////////////////////////
 	// Save all plots in ROOT    //
 	///////////////////////////////
 
 	fOutput->cd();
-	hNbPEVSHits->Write();
+	itFile.GetHist()->Write();
+	hNbPE->Write();
 
 	///////////////////////////////
 	// FILL transition matrix    //
@@ -127,9 +136,9 @@ int main(int argc, char *argv[]) {
 
 	for(int iBin=1; iBin<nbBinsPE; iBin++){
 
-	  double BinPE = hNbPEVSHits->ProjectionX()->GetBinCenter(iBin);
-	  double BinPEContent = hNbPEVSHits->ProjectionX()->GetBinContent(iBin);
-	  double BinPos = file.GetID();
+	  double BinPE = hNbPE->GetBinCenter(iBin);
+	  double BinPEContent = hNbPE->GetBinContent(iBin);
+	  double BinPos = itFile.GetID();
 
 	  hNbPEVSPos->Fill(BinPE, BinPos, BinPEContent);
 
@@ -141,12 +150,15 @@ int main(int argc, char *argv[]) {
   // ####                      DRAWING                      #### //
   // #### #### #### #### #### #### #### #### #### #### #### #### //
 
-  auto *c1 = new TCanvas("c1","c1",800,600);
+  c1 = new TCanvas("c1","c1",800,600);
   hNbPEVSPos->Draw("COLZ");
-
 
   /////////////////////////
   // ...
+
+  hNbPEVSPos->Write();
+  fOutput->Close();
+
 
   cout << endl;
   cout << "Hit Ctrl+C to exit" << endl;
