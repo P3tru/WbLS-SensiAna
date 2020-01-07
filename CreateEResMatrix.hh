@@ -31,6 +31,7 @@ void ShowUsage(string name){
 	   << "\t-nPMTBins\tSet nPMT bins (default 201)\n"
 	   << "\t-minPMT\tSet low edge bin PMT (default -0.5)\n"
 	   << "\t-maxPMT\tSet max edge bin PMT (default 200.5)\n"
+	   << "\t-nThresh\tSet threshold for Eff (default nHits=20)\n"
 	   << "\t-foutputname\tSet name output file (default \"output.root\")\n"
 	   << endl
 	   << "\tSOURCES\tSpecify input data file (.txt)\n"
@@ -41,6 +42,7 @@ void ShowUsage(string name){
 void ProcessArgs(TApplication *theApp, string *filename,
 				 int *User_nPEBins, double *User_minPE, double *User_maxPE,
 				 int *User_nPMTBins, double *User_minPMT, double *User_maxPMT,
+				 int *User_nThresh,
 				 string *User_fOutput) {
 
   // Reading user input parameters
@@ -68,6 +70,8 @@ void ProcessArgs(TApplication *theApp, string *filename,
 	  *User_minPMT = stod(theApp->Argv(++i));
 	} else if ((arg == "-maxPMT")) {
 	  *User_maxPMT = stod(theApp->Argv(++i));
+	} else if ((arg == "-nThresh")) {
+	  *User_nThresh = stod(theApp->Argv(++i));
 	} else if ((arg == "-foutputname")) {
 	  *User_fOutput = theApp->Argv(++i);
 	} else {

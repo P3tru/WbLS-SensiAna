@@ -22,6 +22,8 @@
 /////////////////////////   RAT   ///////////////////////////
 #include <RAT/DS/MC.hh>
 #include <RAT/DS/Root.hh>
+#include <RAT/DS/Run.hh>
+#include <TRandom3.h>
 
 /////////////////////////   USER   //////////////////////////
 #include "../ProgressBar.hpp"
@@ -37,6 +39,9 @@ class TFileAnalysis {
   // name, vtx position and E can be extracted from filename
   string filename;
   double eBin;
+
+  // Nb of Entries
+  double nbEntries;
 
   // Unique ID
   double ID;
@@ -94,6 +99,8 @@ class TFileAnalysis {
 
 	  int nEvents = tree->GetEntries();
 
+	  nbEntries = nEvents;
+
 	  ProgressBar progressBar(nEvents, 70);
 
 	  for (int iEvt = 0; iEvt < nEvents; iEvt++) {
@@ -144,6 +151,51 @@ class TFileAnalysis {
   };
 
   // #### #### #### #### #### #### #### #### #### //
+  // #### ####        PMTs INFO         #### #### //
+  // #### #### #### #### #### #### #### #### #### //
+
+  void PrintPMTsInfo(){
+
+	auto *f = new TFile(filename.c_str());
+
+	if(f->IsOpen()) {
+
+	  ////////////////////////////////
+	  // IF file is open do stuff ////
+	  ////////////////////////////////
+
+	  auto *run = new RAT::DS::Run();
+
+	  auto *runTree = (TTree*)f->Get("runT");
+	  runTree->SetBranchAddress("run",&run);
+	  runTree->GetEntry(0);
+
+	  cout << "This MC was produced with " << run->GetPMTInfo()->GetPMTCount()
+		   << " PMTs of model: " << run->GetPMTInfo()->GetModelName(0) << endl;
+
+	  auto *Random = new TRandom3(0);
+
+	  for(int i=0; i < 100; i++){
+	    int id = Random->Uniform(run->GetPMTInfo()->GetPMTCount());
+		cout << "Position of random PMT: "
+			 << run->GetPMTInfo()->GetPosition(id).x() << "mm "
+			 << run->GetPMTInfo()->GetPosition(id).y() << "mm "
+			 << run->GetPMTInfo()->GetPosition(id).z() << "mm " << endl;
+		cout << "Distance from center: "
+			 << TMath::Sqrt(run->GetPMTInfo()->GetPosition(id).x()*run->GetPMTInfo()->GetPosition(id).x()+
+			 run->GetPMTInfo()->GetPosition(id).y()*run->GetPMTInfo()->GetPosition(id).y()) << endl;
+	  }
+
+
+	  f->Close();
+
+	}
+
+	delete f;
+
+  };
+
+  // #### #### #### #### #### #### #### #### #### //
   // #### ####    GETTERS AND SETTERS   #### #### //
   // #### #### #### #### #### #### #### #### #### //
 
@@ -170,6 +222,13 @@ class TFileAnalysis {
   }
   void SetID(double id) {
 	ID = id;
+  }
+
+  double GetNbEntries() const {
+	return nbEntries;
+  }
+  void SetNbEntries(double nb_entries) {
+	nbEntries = nb_entries;
   }
 
 };

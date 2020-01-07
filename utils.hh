@@ -45,5 +45,15 @@ std::vector<double> CorrectBinRangeArray(std::vector<double> inputArray){
 
 }
 
+int EoF = 0;
+
+void Interrupt(int arg){
+
+  if(EoF==0) { printf("got a control-C, stop\n"); EoF=1; return; }
+  else { printf("got a control-C, exiting\n"); exit(0); }
+
+}
+
+
 
 #endif // _UTILS_HH_

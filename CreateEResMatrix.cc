@@ -5,12 +5,16 @@
 ///////////////////////// STL C/C++ /////////////////////////
 #include <vector>
 #include <algorithm>
+#include <csignal>
 
 /////////////////////////   ROOT   //////////////////////////
 #include <TApplication.h>
 #include <TStyle.h>
 #include <TCanvas.h>
 #include <TF1.h>
+#include <TGraph.h>
+#include <TGraphErrors.h>
+#include <TLegend.h>
 
 /////////////////////////   USER   //////////////////////////
 #include "TFileAnalysis.hh"
@@ -23,12 +27,15 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
+  EoF=0;
+  signal(SIGINT,Interrupt);
+
   // Create TApp
   TApplication theApp("App", &argc, argv);
 
   // Set basic ROOT style
   gStyle->SetOptStat(0);
-  gStyle->SetPalette(56);
+  gStyle->SetPalette(kDarkRainBow);
 
   // Input parameters
   // There's default value chosen by ternaries below
@@ -38,11 +45,13 @@ int main(int argc, char *argv[]) {
   int User_nPMTBins=-1;
   double User_minPMT=-1; double User_maxPMT=-1;
   string User_fOutput;
+  int User_nThresh=-1;
 
   // READ input parameters
   ProcessArgs(&theApp,&inputName,
 			  &User_nPEBins, &User_minPE, &User_maxPE,
 			  &User_nPMTBins, &User_minPMT, &User_maxPMT,
+			  &User_nThresh,
 			  &User_fOutput);
 
   // Get ready to read inside inputName
@@ -83,7 +92,15 @@ int main(int argc, char *argv[]) {
 
   TH2D *hNbPEVSHits;
   TH1D *hNbPE;
+  TH1D *hNHits;
+
   TH2D *hEMatrix;
+  vector< TH1D* > hNbPEVSE;
+  vector< TH1D* > hNHitsVSE;
+
+  TGraphErrors *grYieldVSE;
+
+  TGraphErrors *grEff;
 
   sort(Ebins.begin(),Ebins.end());
   vector<double> corEbins = CorrectBinRangeArray(Ebins);
@@ -96,17 +113,43 @@ int main(int argc, char *argv[]) {
   const double minPMT = (User_minPMT>-1) ? User_minPMT : -0.5;
   const double maxPMT = (User_maxPMT>-1) ? User_maxPMT : 200.5;
 
+  const int nThresh = (User_nThresh>-1) ? User_nThresh : 20;
 
   hEMatrix = new TH2D("hEMatrix", "Transition matrix describing the energy response of the detector",
 					  Ebins.size(),&corEbins[0],
 					  nbBinsPE,minPE,maxPE);
 
+  grYieldVSE = new TGraphErrors();
+  grYieldVSE->SetName("grYieldVSE");
+  grYieldVSE->SetTitle("Yield VS E ; E_{kin} positron (MeV) ; Yield (MeV^{-1})");
+  grYieldVSE->SetMarkerColor(kBlue-4);
+  grYieldVSE->SetMarkerStyle(kFullCrossX);
+  grYieldVSE->SetMarkerSize(1);
+
+  grEff = new TGraphErrors();
+  grEff->SetName("grEff");
+  grEff->SetTitle(Form("Eff VS E for nThresh=%d ; E_{kin} positron (MeV) ; Eff (%)", nThresh));
+  grEff->SetMarkerColor(kRed-4);
+  grEff->SetMarkerStyle(kFullCrossX);
+  grEff->SetMarkerSize(1);
+
+  TF1 *fPois = new TF1("fPois",
+					   "[0]*TMath::Power(([1]/[2]),(x/[2]))*(TMath::Exp(-([1]/[2])))/TMath::Gamma((x/[2])+1.)",
+					   0, maxPMT);
+  fPois->SetParName(0,"alpha");
+  fPois->SetParName(1,"lambda");
+  fPois->SetParName(2,"mu");
+
   TCanvas *c1;
 
-  auto fOutputName = (!User_fOutput.empty()) ? User_fOutput : "output.root";
-  auto *fOutput = new TFile(fOutputName.c_str(),"RECREATE");
+  auto fOutputName = (!User_fOutput.empty()) ? User_fOutput : "output";
+  auto *fOutput = new TFile(Form("%s.root", fOutputName.c_str()),"RECREATE");
+
+  auto *leg = new TLegend(0.7,0.7,0.99,0.99);
 
   for(auto& file : FileAnalysis){
+
+    if(EoF) break;
 
     cout << "PROCESSING atm " << ExtractFilenameFromPath(file.GetFilename()) << endl;
 
@@ -116,13 +159,28 @@ int main(int argc, char *argv[]) {
 
 	file.SetHist(hNbPEVSHits);
 
-	file.DoAnalysis(CollectPEAndHits);
+//	file.DoAnalysis(CollectPEAndHits);
+	file.DoAnalysis(CollectPromptPEAndHits);
 
-	///////////////////////////////
-	// Recover hnPE projection   //
-	///////////////////////////////
+	//////////////////////////////////////
+	// Recover hNPE/hNHits projection   //
+	//////////////////////////////////////
 
 	hNbPE = (TH1D*)file.GetHist()->ProjectionX()->Clone();
+	hNbPE->SetTitle("Nb PE collected per events ; Nb PE collected ;");
+	hNHits = (TH1D*)file.GetHist()->ProjectionY()->Clone();
+	hNHits->SetTitle("Nb PMTHits per events ; NHit ;");
+
+	grEff->SetPoint(grEff->GetN(),
+					file.GetEBin(),
+					hNHits->Integral(hNHits->FindBin(nThresh), nbBinsPMT)/hNHits->Integral());
+	grEff->SetPointError(grEff->GetN()-1, 0., 0);
+
+
+	hNbPEVSE.emplace_back(hNbPE);
+	hNHitsVSE.emplace_back(hNHits);
+
+	leg->AddEntry(hNHits, Form("%.1fMeV", file.GetEBin()));
 
 	///////////////////////////////
 	// Save all plots in ROOT    //
@@ -131,6 +189,7 @@ int main(int argc, char *argv[]) {
 	fOutput->cd();
 	hNbPEVSHits->Write();
 	hNbPE->Write();
+	hNHits->Write();
 
 	///////////////////////////////
 	// FILL transition matrix    //
@@ -150,32 +209,77 @@ int main(int argc, char *argv[]) {
 	// FIT and recover res. info //
 	///////////////////////////////
 
-	hNbPE->Fit("gaus","0LQSEM+");
-	TF1 *fFit = hNbPE->GetFunction("gaus");
+	int NbEvents = file.GetNbEntries();
+	fPois->SetParameters(1, 1, 1); // you MUST set non-zero initial values for parameters
+	fPois->SetParLimits(0,0.,NbEvents);
+	fPois->SetParLimits(1,0.,maxPE);
+	fPois->SetParLimits(2,0.,NbEvents);
+
+
+	TFitResultPtr r = hNHits->Fit("fPois", "R"); // "R" = fit between "xmin" and "xmax" of the "fPois"
+	TF1 *fFit;
+
+	if(r == 0) {
+
+	  hNHits->GetFunction("fPois")->SetLineColor(kBlue-4);
+	  hNHits->GetFunction("fPois")->SetLineWidth(1.5);
+	  hNHits->GetFunction("fPois")->SetLineStyle(2);
+	  fFit = hNHits->GetFunction("fPois");
+
+	} else {
+
+	  r = hNHits->Fit("gaus");
+
+	  hNHits->GetFunction("gaus")->SetLineColor(kRed-4);
+	  hNHits->GetFunction("gaus")->SetLineWidth(1.5);
+	  hNHits->GetFunction("gaus")->SetLineStyle(2);
+	  fFit = hNHits->GetFunction("gaus");
+
+	}
+
 	double chi2 = fFit->GetChisquare();
-	double c = fFit->GetParameter(0);
+	double alpha = fFit->GetParameter(0);
 	double mean = fFit->GetParameter(1);
 	double meanErr = fFit->GetParError(1);
 	double sigma = fFit->GetParameter(2);
 	double sigmaErr = fFit->GetParError(2);
 
-//	c1 = new TCanvas(Form("cEbin%.1fMeV2D", file.GetEBin()),Form("cEbin%.1fMeV2D", file.GetEBin()),
-//					 800,600);
-//	c1->SetGrid();
-//	file.GetHist()->Draw("COLZ");
-//
-//	c1 = new TCanvas(Form("cEbin%.1fMeV1D", file.GetEBin()),Form("cEbin%.1fMeV1D", file.GetEBin()),
-//					 800,600);
-//	c1->SetGrid();
-//	hNbPE->Draw("COLZ");
+	double Yield = mean / file.GetEBin();
+	double YieldErr = meanErr / file.GetEBin();
+
+	if(r == 0){
+	  grYieldVSE->SetPoint(grYieldVSE->GetN(), file.GetEBin(), Yield);
+	  grYieldVSE->SetPointError(grYieldVSE->GetN()-1, 0., YieldErr);
+	}
 
   }
 
+  EoF=1;
+
   hEMatrix->Write();
+  grYieldVSE->Write();
+  grEff->Write();
 
   c1 = new TCanvas("cEMatrix", "cEMatrix", 800,600);
   c1->SetGrid();
   hEMatrix->Draw("COLZ");
+
+  c1 = new TCanvas("cYield", "cYield", 800,600);
+  c1->SetGrid();
+  grYieldVSE->Draw("AP");
+
+  c1 = new TCanvas("cEff", "cEff", 800,600);
+  c1->SetGrid();
+  grEff->Draw("AP");
+
+  c1 = new TCanvas("cNPEVSE", "cNPEVSE", 800,600);
+  c1->SetGrid();
+  for(auto& h : hNHitsVSE) {
+    h->Draw("SAME PLC PMC");
+  }
+  leg->Draw();
+  c1->Write();
+  c1->Print(Form("%s.pdf", fOutputName.c_str()));
 
   /////////////////////////
   // ...
