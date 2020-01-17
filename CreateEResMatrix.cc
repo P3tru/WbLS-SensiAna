@@ -15,6 +15,7 @@
 #include <TGraph.h>
 #include <TGraphErrors.h>
 #include <TLegend.h>
+#include <TLatex.h>
 
 /////////////////////////   USER   //////////////////////////
 #include "TFileAnalysis.hh"
@@ -117,7 +118,7 @@ int main(int argc, char *argv[]) {
 
   hEMatrix = new TH2D("hEMatrix", "Transition matrix describing the energy response of the detector",
 					  Ebins.size(),&corEbins[0],
-					  nbBinsPE,minPE,maxPE);
+					  nbBinsPMT,minPMT,maxPMT);
 
   grYieldVSE = new TGraphErrors();
   grYieldVSE->SetName("grYieldVSE");
@@ -145,7 +146,7 @@ int main(int argc, char *argv[]) {
   auto fOutputName = (!User_fOutput.empty()) ? User_fOutput : "output";
   auto *fOutput = new TFile(Form("%s.root", fOutputName.c_str()),"RECREATE");
 
-  auto *leg = new TLegend(0.7,0.7,0.99,0.99);
+  auto *leg = new TLegend(0.83,0.38,0.99,0.99);
 
   for(auto& file : FileAnalysis){
 
@@ -195,13 +196,13 @@ int main(int argc, char *argv[]) {
 	// FILL transition matrix    //
 	///////////////////////////////
 
-	for(int iBin=1; iBin<nbBinsPE; iBin++){
+	for(int iBin=1; iBin<nbBinsPMT; iBin++){
 
-	  double BinPE = hNbPE->GetBinCenter(iBin);
-	  double BinPEContent = hNbPE->GetBinContent(iBin);
+	  double BinPMT = hNHits->GetBinCenter(iBin);
+	  double BinPMTContent = hNHits->GetBinContent(iBin);
 	  double BinE = file.GetEBin();
 
-	  hEMatrix->Fill(BinE, BinPE, BinPEContent);
+	  hEMatrix->Fill(BinE, BinPMT, BinPMTContent);
 
 	}
 
@@ -215,41 +216,44 @@ int main(int argc, char *argv[]) {
 	fPois->SetParLimits(1,0.,maxPE);
 	fPois->SetParLimits(2,0.,NbEvents);
 
+	if(hNHits->GetEntries() > 0){
 
-	TFitResultPtr r = hNHits->Fit("fPois", "R"); // "R" = fit between "xmin" and "xmax" of the "fPois"
-	TF1 *fFit;
+	  TFitResultPtr r = hNHits->Fit("fPois", "R");
+	  TF1 *fFit;
 
-	if(r == 0) {
+	  if(r == 0 && file.GetEBin() < 0.0 ) {
 
-	  hNHits->GetFunction("fPois")->SetLineColor(kBlue-4);
-	  hNHits->GetFunction("fPois")->SetLineWidth(1.5);
-	  hNHits->GetFunction("fPois")->SetLineStyle(2);
-	  fFit = hNHits->GetFunction("fPois");
+		hNHits->GetFunction("fPois")->SetLineColor(kBlue-4);
+		hNHits->GetFunction("fPois")->SetLineWidth(1.5);
+		hNHits->GetFunction("fPois")->SetLineStyle(2);
+		fFit = hNHits->GetFunction("fPois");
 
-	} else {
+	  } else {
 
-	  r = hNHits->Fit("gaus");
+		r = hNHits->Fit("gaus");
 
-	  hNHits->GetFunction("gaus")->SetLineColor(kRed-4);
-	  hNHits->GetFunction("gaus")->SetLineWidth(1.5);
-	  hNHits->GetFunction("gaus")->SetLineStyle(2);
-	  fFit = hNHits->GetFunction("gaus");
+		hNHits->GetFunction("gaus")->SetLineColor(kRed-4);
+		hNHits->GetFunction("gaus")->SetLineWidth(1.5);
+		hNHits->GetFunction("gaus")->SetLineStyle(2);
+		fFit = hNHits->GetFunction("gaus");
 
-	}
+	  }
 
-	double chi2 = fFit->GetChisquare();
-	double alpha = fFit->GetParameter(0);
-	double mean = fFit->GetParameter(1);
-	double meanErr = fFit->GetParError(1);
-	double sigma = fFit->GetParameter(2);
-	double sigmaErr = fFit->GetParError(2);
+	  double chi2 = fFit->GetChisquare();
+	  double alpha = fFit->GetParameter(0);
+	  double mean = fFit->GetParameter(1);
+	  double meanErr = fFit->GetParError(1);
+	  double sigma = fFit->GetParameter(2);
+	  double sigmaErr = fFit->GetParError(2);
 
-	double Yield = mean / file.GetEBin();
-	double YieldErr = meanErr / file.GetEBin();
+	  double Yield = mean / file.GetEBin();
+	  double YieldErr = meanErr / file.GetEBin();
 
-	if(r == 0){
-	  grYieldVSE->SetPoint(grYieldVSE->GetN(), file.GetEBin(), Yield);
-	  grYieldVSE->SetPointError(grYieldVSE->GetN()-1, 0., YieldErr);
+	  if(r == 0){
+		grYieldVSE->SetPoint(grYieldVSE->GetN(), file.GetEBin(), Yield);
+		grYieldVSE->SetPointError(grYieldVSE->GetN()-1, 0., YieldErr);
+	  }
+
 	}
 
   }
@@ -263,23 +267,37 @@ int main(int argc, char *argv[]) {
   c1 = new TCanvas("cEMatrix", "cEMatrix", 800,600);
   c1->SetGrid();
   hEMatrix->Draw("COLZ");
+  hEMatrix->Fit("pol1");
+  TF1 *fFit = hEMatrix->GetFunction("pol1");
+  double p0 = fFit->GetParameter(0);
+  double p0Err = fFit->GetParError(0);
+  double p1 = fFit->GetParameter(1);
+  double p1Err = fFit->GetParError(1);
+  TLatex *lFitResults = new TLatex();
+  lFitResults->SetTextAlign(12);
+  lFitResults->SetTextSize(0.04);
+  lFitResults->DrawLatex(1,maxPMT*0.8,Form("%.2f #pm %.2f NHits/MeV",p1,p1Err));
+  c1->Print(Form("%s_EMatrix.pdf", fOutputName.c_str()));
 
   c1 = new TCanvas("cYield", "cYield", 800,600);
   c1->SetGrid();
   grYieldVSE->Draw("AP");
+  c1->Print(Form("%s_Yield.pdf", fOutputName.c_str()));
 
   c1 = new TCanvas("cEff", "cEff", 800,600);
   c1->SetGrid();
   grEff->Draw("AP");
+  c1->Print(Form("%s_Eff.pdf", fOutputName.c_str()));
 
   c1 = new TCanvas("cNPEVSE", "cNPEVSE", 800,600);
   c1->SetGrid();
   for(auto& h : hNHitsVSE) {
-    h->Draw("SAME PLC PMC");
+    if(h->GetEntries() > 0)
+	  h->Draw("SAME PLC PMC");
   }
   leg->Draw();
   c1->Write();
-  c1->Print(Form("%s.pdf", fOutputName.c_str()));
+  c1->Print(Form("%s_NPEVSE.pdf", fOutputName.c_str()));
 
   /////////////////////////
   // ...

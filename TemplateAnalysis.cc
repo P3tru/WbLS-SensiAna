@@ -19,48 +19,6 @@
 
 using namespace std;
 
-void ShowUsage(string name){
-
-  cerr << "Usage: " << name << " <option(s)> SOURCES" << endl
-	   << "Options:\n"
-	   << "\t-h\tShow this help message\n"
-	   << endl
-	   << "\tSOURCES\tSpecify input data file\n"
-	   << endl;
-
-}
-
-void ProcessArgs(TApplication *theApp, string *filename) {
-
-  // Reading user input parameters
-  if (theApp->Argc() < 2) {
-	ShowUsage(theApp->Argv(0));
-	exit(0);
-  }
-
-  int nFiles=0;
-
-  for (int i = 1; i < theApp->Argc(); i++) {
-	string arg = theApp->Argv(i);
-	if ((arg == "-h") || (arg == "--help")) {
-	  ShowUsage(theApp->Argv(0));
-	  exit(0);
-	} else {
-	  if (i + 1 > theApp->Argc() && nFiles == 0) {
-		cout << "NO SOURCES PROVIDED !" << endl;
-		ShowUsage(theApp->Argv(0));
-		exit(EXIT_FAILURE);
-	  } else {
-		cout << "READ " << arg << endl;
-		nFiles++;
-		*filename = arg;
-	  }
-	}
-  }
-
-}
-
-
 int main(int argc, char *argv[]) {
 
   // Create TApp
@@ -68,17 +26,40 @@ int main(int argc, char *argv[]) {
 
   // Set basic ROOT style
   gStyle->SetOptStat(0);
-  gStyle->SetPalette(56);
+  gStyle->SetPalette(kDarkRainBow);
 
-  // Create ifstream for input file
+  // Input parameters
+  // There's default value chosen by ternaries below
   string inputName;
-  ProcessArgs(&theApp,&inputName);
+  int User_nPEBins=-1;
+  double User_minPE=-1; double User_maxPE=-1;
+  int User_nPMTBins=-1;
+  double User_minPMT=-1; double User_maxPMT=-1;
+  string User_fOutput;
+  int User_nThresh=-1;
+
+  // READ input parameters
+  ProcessArgs(&theApp,&inputName,
+			  &User_nPEBins, &User_minPE, &User_maxPE,
+			  &User_nPMTBins, &User_minPMT, &User_maxPMT,
+			  &User_nThresh,
+			  &User_fOutput);
 
   TFileAnalysis<TH2D> FileAnalysis(inputName);
 
-  TH2D *hNbPEVSHits = new TH2D("hProut","Prout",
-							   101,-0.5,1000.5,
-							   101,-0.5,1000.5);
+  const int nbBinsPE = (User_nPEBins>-1) ? User_nPEBins : 201;
+  const double minPE = (User_minPE>-1) ? User_minPE : -0.5;
+  const double maxPE = (User_maxPE>-1) ? User_maxPE : 200.5;
+
+  const int nbBinsPMT = (User_nPMTBins>-1) ? User_nPMTBins : 201;
+  const double minPMT = (User_minPMT>-1) ? User_minPMT : -0.5;
+  const double maxPMT = (User_maxPMT>-1) ? User_maxPMT : 200.5;
+
+  const int nThresh = (User_nThresh>-1) ? User_nThresh : 20;
+
+  TH2D *hNbPEVSHits = new TH2D("hNbPEVSHits","NbPE VS NbHits",
+							   nbBinsPE,minPE,maxPE,
+							   nbBinsPMT,minPMT,maxPMT);
 
   FileAnalysis.SetHist(hNbPEVSHits);
 
@@ -91,7 +72,6 @@ int main(int argc, char *argv[]) {
   auto *c1 = new TCanvas("c1","c1",800,600);
 
   FileAnalysis.GetHist()->Draw("COLZ");
-
 
   /////////////////////////
   // ...

@@ -63,5 +63,9 @@ CreatePosMatrix: CreatePosMatrix.o $(OBJS)
 	$(CXX) $(CPPFLAGS) -o CreatePosMatrix CreatePosMatrix.cc $(OBJS) $(EXTRALIBS)
 	$(RM) CreatePosMatrix.o $(OBJS)
 
+PlotPEVSNHits: PlotPEVSNHits.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o PlotPEVSNHits PlotPEVSNHits.cc $(OBJS) $(EXTRALIBS)
+	$(RM) PlotPEVSNHits.o $(OBJS)
+
 clean:
-	$(RM) $(OBJS) EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix
+	$(RM) $(OBJS) EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix PlotPEVSNHits
