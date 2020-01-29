@@ -6,12 +6,16 @@
 #define _UTILS_HH_
 
 ///////////////////////// STL C/C++ /////////////////////////
+#include <iostream>
 #include <string>
+
+#include <sys/stat.h>
 
 /////////////////////////   BOOST   /////////////////////////
 #include <boost/filesystem/path.hpp>
 
 /////////////////////////   ROOT   //////////////////////////
+#include <TStyle.h>
 
 /////////////////////////   RAT   ///////////////////////////
 
@@ -121,5 +125,11 @@ void SetStyleVariables(TStyle *t2kStyle){
   t2kStyle->SetNumberContours(NCont);
 
 }
+
+bool IsFileExist(const std::string& name) {
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
+}
+
 
 #endif // _UTILS_HH_

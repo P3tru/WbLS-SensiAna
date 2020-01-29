@@ -50,6 +50,9 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 add_executable(TemplateAnalysis TemplateAnalysis.cc ${sources} ${headers})
 target_link_libraries(TemplateAnalysis ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
 
+add_executable(TemplateAnalysisMT TemplateAnalysisMT.cc ${sources} ${headers})
+target_link_libraries(TemplateAnalysisMT ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
+
 add_executable(EventWrapper pyevent.cpp ${sources} ${headers})
 target_link_libraries(EventWrapper ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
 

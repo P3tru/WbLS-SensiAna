@@ -47,6 +47,10 @@ TemplateAnalysis: TemplateAnalysis.o $(OBJS)
 	$(CXX) $(CPPFLAGS) -o TemplateAnalysis TemplateAnalysis.cc $(OBJS) $(EXTRALIBS)
 	$(RM) TemplateAnalysis.o $(OBJS)
 
+TemplateAnalysisMT: TemplateAnalysisMT.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o TemplateAnalysisMT TemplateAnalysisMT.cc $(OBJS) $(EXTRALIBS)
+	$(RM) TemplateAnalysisMT.o $(OBJS)
+
 EventWrapper: pyevent.o $(OBJS)
 	$(CXX) $(CPPFLAGS) -o EventWrapper pyevent.cpp $(OBJS) $(EXTRALIBS)
 	$(RM) pyevent.o $(OBJS)
@@ -68,4 +72,4 @@ PlotPEVSNHits: PlotPEVSNHits.o $(OBJS)
 	$(RM) PlotPEVSNHits.o $(OBJS)
 
 clean:
-	$(RM) $(OBJS) EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix PlotPEVSNHits
+	$(RM) $(OBJS) TemplateAnalysis TemplateAnalysisMT EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix PlotPEVSNHits
