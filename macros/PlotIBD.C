@@ -6,6 +6,8 @@
 #define PI 3.14159
 #define C 299.792458 // mm/ns
 
+using namespace std;
+
 class Hit {
 
  protected:
@@ -34,18 +36,19 @@ class Hit {
   void SetT(double x){ T = x; };
 
   double GetDistance(){return sqrt(X*X + Y*Y + Z*Z);};
+  double GetTResid(){return T - GetDistance()/C; };
 
 };
 
-class VectorizedHit {
+class HitCollection {
 
  protected:
+  vector<TVector3> HitPos;
 
-  std::vector<double> T;
+  vector<double> Q;
+  vector<double> T;
 
  public:
-  VectorizedHit() : {};
-  ~VectorizedHit(){};
 
 };
 
@@ -64,7 +67,7 @@ double GetRMSFromShiftedMean(TH1 *h, double ShiftedMean=0){
 
   for(int iBin=1; iBin<nbBins+1; iBin++){
 
-    D2 += std::pow(h->GetBinContent(h->GetBin(iBin)) - ShiftedMean,2);
+    D2 += pow(h->GetBinContent(h->GetBin(iBin)) - ShiftedMean,2);
 
   }
 
@@ -73,18 +76,18 @@ double GetRMSFromShiftedMean(TH1 *h, double ShiftedMean=0){
 
 double GetTGuess(double *x, double *par){
 
-  std::cout << sizeof(par) << std::endl;
-  std::cout << sizeof(par[0]) << std::endl;
+  cout << sizeof(par) << endl;
+  cout << sizeof(par[0]) << endl;
 
   size_t n = sizeof(*par)/sizeof(par);
 
-  std::cout << n << std::endl;
+  cout << n << endl;
 
   double T_GUESS = 0;
 
   for(unsigned int i=0; i<n; i++){
 
-    std::cout << par[i] << std::endl;
+    cout << par[i] << endl;
 
 	T_GUESS += (par[i] - x[0]/C) / n;
 
@@ -112,7 +115,7 @@ void PlotIBD(const char *file=NULL){
 
   auto *f = new TFile(file);
 
-  std::vector< std::vector<Hit> > Positrons;
+  vector< vector<Hit> > Positrons;
 
   TH2D* hTVSQ = new TH2D("hTVSQ","hTVSQ",
 						 201, -0.5, 200.5,
@@ -130,8 +133,8 @@ void PlotIBD(const char *file=NULL){
 
   int nEvtWithHits = 0;
 
-  std::vector<TH1D*> hTResPerEvt;
-  std::vector<TH1D*> hDPerEvt;
+  vector<TH1D*> hTResPerEvt;
+  vector<TH1D*> hDPerEvt;
 
   if(f->IsOpen()) {
 
@@ -152,17 +155,17 @@ void PlotIBD(const char *file=NULL){
 
 	auto nEvents = tree->GetEntries();
 //	nEvents = 10;
-	std::cout << "#Evts: " << nEvents << std::endl;
+	cout << "#Evts: " << nEvents << endl;
 	ProgressBar progressBar(nEvents, 70);
 
-	std::cout << "CREATE PDFs" << std::endl;
+	cout << "CREATE PDFs" << endl;
 
 	for (int iEvt = 0; iEvt < nEvents; iEvt++) {
 	  tree->GetEntry(iEvt);
 	  // record the tick
 	  ++progressBar;
 
-	  std::vector<Hit> Positron;
+	  vector<Hit> Positron;
 
 	  TH1D *hTResPerEvtPerHit = new TH1D(Form("hTResidualsPerEvt#%d", iEvt),
 										 "T Residuals",
@@ -244,10 +247,10 @@ void PlotIBD(const char *file=NULL){
 
 	// NOW FIT
 
-	std::cout << std::endl;
-	std::cout << "### ##### ###" << std::endl;
-	std::cout << "###  FIT  ###" << std::endl;
-	std::cout << "### ##### ###" << std::endl;
+	cout << endl;
+	cout << "### ##### ###" << endl;
+	cout << "###  FIT  ###" << endl;
+	cout << "### ##### ###" << endl;
 
 	const int NbDBinsMin = 101;
 	const double minDMin = 6000;
@@ -269,12 +272,12 @@ void PlotIBD(const char *file=NULL){
 //	  ++progressBarFIT;
 
 	  if(iEvt % 100 == 0){
-		std::cout << "Evt#" << iEvt << std::endl;
+		cout << "Evt#" << iEvt << endl;
 	  }
 
 	  const unsigned int NHits = Positrons[iEvt].size();
 
-	  std::vector<double> NLL;
+	  vector<double> NLL;
 	  for(int iD = 0; iD<NbDBinsMin; iD++){
 
 	    double D_GUESS = minDMin + iD*StepDMin;
@@ -287,31 +290,31 @@ void PlotIBD(const char *file=NULL){
 								  1/(double)(NHits));
 		}
 
-//		std::cout << "D_GUESS: " << D_GUESS << std::endl;
+//		cout << "D_GUESS: " << D_GUESS << endl;
 		double NLL_val = 0;
 		for(int iBin=0; iBin<NbDBinsMin; iBin++){
 		  NLL_val += EvalL(hTResPerEvt_GUESS->GetBinContent(hTResPerEvt_GUESS->GetBin(iBin)),
 								 hTResiduals->GetBinContent(hTResiduals->GetBin(iBin)));
-//		  std::cout << "#Bin" << iBin
+//		  cout << "#Bin" << iBin
 //					<< " TRes_OBS: " << hTResPerEvt_GUESS->GetBinContent(hTResPerEvt_GUESS->GetBin(iBin))
 //					<< " TRes_PRED: " << hTResiduals->GetBinContent(hTResiduals->GetBin(iBin))
-//					<< std::endl;
+//					<< endl;
 		}
-//		std::cout << "NLL: " << NLL_val << std::endl;
+//		cout << "NLL: " << NLL_val << endl;
 		NLL.emplace_back(NLL_val);
 
 		delete hTResPerEvt_GUESS;
 
 	  }
 
-	  int minElementIndex = std::min_element(NLL.begin(),NLL.end()) - NLL.begin();
+	  int minElementIndex = min_element(NLL.begin(),NLL.end()) - NLL.begin();
 
 	  hPosRes->Fill(minDMin + StepDMin*minElementIndex - hDistances->GetMean());
 
-//	  std::cout << "FIT d: "
-//				<< minDMin + StepDMin*minElementIndex << std::endl;
-//	  std::cout << "FIT d-d_mean: "
-//				<< minDMin + StepDMin*minElementIndex - hDistances->GetMean() << std::endl;
+//	  cout << "FIT d: "
+//				<< minDMin + StepDMin*minElementIndex << endl;
+//	  cout << "FIT d-d_mean: "
+//				<< minDMin + StepDMin*minElementIndex - hDistances->GetMean() << endl;
 
 //	  // display the bar
 //	  progressBarFIT.display();

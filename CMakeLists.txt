@@ -67,3 +67,6 @@ target_link_libraries(CreatePosMatrix ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRAT
 
 add_executable(PlotPEVSNHits PlotPEVSNHits.cc ${sources} ${headers})
 target_link_libraries(PlotPEVSNHits ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
+
+add_executable(VtxRecon VtxRecon.cc ${sources} ${headers})
+target_link_libraries(VtxRecon ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)

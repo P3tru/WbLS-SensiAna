@@ -126,10 +126,55 @@ void SetStyleVariables(TStyle *t2kStyle){
 
 }
 
+void SetBasicStyle(){
+  gROOT->SetStyle("Plain");
+
+  gStyle->SetOptStat(0); // This determines if you want a stats box
+  gStyle->SetOptFit(0); // This determines if you want a fit info box
+  gStyle->GetAttDate()->SetTextColor(1);
+  gStyle->SetOptTitle(1); // no title; comment out if you want a title
+  gStyle->SetLabelFont(132,"XYZ");
+  gStyle->SetTextFont(132);
+  gStyle->SetTitleFont(132,"XYZ");
+
+  gROOT->ForceStyle();
+
+  gStyle->SetPalette(kDarkRainBow);
+}
+
+void SetBasicTH1Style(TH1 *h,
+					  int Color=kBlue-4,
+					  int LineWidth=1, int LineStyle=1,
+					  int MarkerSize=1, int MarkerStyle=kPlus){
+
+  h->SetLineColor(Color);
+  h->SetLineWidth(LineWidth);
+  h->SetLineStyle(LineStyle);
+
+  h->SetMarkerColor(Color);
+  h->SetMarkerSize(MarkerSize);
+  h->SetMarkerStyle(MarkerStyle);
+
+}
+
 bool IsFileExist(const std::string& name) {
   struct stat buffer;
   return (stat (name.c_str(), &buffer) == 0);
 }
 
+template <typename T>
+T SetDefValue(const T& User, const T& def){
+  return (User > 0) ? User : def;
+}
+
+// define a function with 3 parameters
+Double_t fitGaus(Double_t *x,Double_t *par) {
+
+  Double_t arg = 0;
+  if (par[2]!=0) arg = (x[0] - par[1])/par[2];
+  Double_t fitval = par[0]*TMath::Exp(-0.5*arg*arg);
+  return fitval;
+
+}
 
 #endif // _UTILS_HH_

@@ -71,5 +71,9 @@ PlotPEVSNHits: PlotPEVSNHits.o $(OBJS)
 	$(CXX) $(CPPFLAGS) -o PlotPEVSNHits PlotPEVSNHits.cc $(OBJS) $(EXTRALIBS)
 	$(RM) PlotPEVSNHits.o $(OBJS)
 
+VtxRecon: VtxRecon.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o VtxRecon VtxRecon.cc $(OBJS) $(EXTRALIBS)
+	$(RM) VtxRecon.o $(OBJS)
+
 clean:
-	$(RM) $(OBJS) TemplateAnalysis TemplateAnalysisMT EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix PlotPEVSNHits
+	$(RM) $(OBJS) TemplateAnalysis TemplateAnalysisMT EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix PlotPEVSNHits VtxRecon
