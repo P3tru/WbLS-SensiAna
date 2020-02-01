@@ -13,6 +13,7 @@
 #include <vector>
 
 /////////////////////////   BOOST   /////////////////////////
+#include <boost/filesystem/path.hpp>
 
 /////////////////////////   ROOT   //////////////////////////
 #include <TApplication.h>
@@ -96,7 +97,14 @@ class Hit {
 	return !(*this < rhs);
   }
 
-  void Print(){
+  void operator+=(Hit rhs) {
+    SetT(T+rhs.GetT());
+  }
+  void operator-=(Hit rhs) {
+	SetT(T-rhs.GetT());
+  }
+
+  void Print() const {
     cout << "X: " << Pos.x()
 		 << " Y: " << Pos.y()
 		 << " Z: " << Pos.z()
@@ -106,6 +114,37 @@ class Hit {
 
 };
 
+Hit operator-(Hit h1, Hit h2){
+  h1.SetT(h1.GetT()-h2.GetT());
+  return h1;
+}
+
+Hit operator+(Hit h1, Hit h2){
+  h1.SetT(h1.GetT()+h2.GetT());
+  return h1;
+}
+
+
+void PrintVHits(vector<Hit> const Hits){
+  for(auto itHit : Hits){
+	itHit.Print();
+  }
+}
+
+
+vector<Hit> CorrectDelayedHits(vector<Hit> rawHits, Hit PreTrig){
+
+  vector<Hit> vHitDelayed_CORRECTED;
+  for(auto itHit : rawHits){
+
+	itHit = itHit - rawHits[0] + PreTrig;
+	vHitDelayed_CORRECTED.emplace_back(itHit);
+
+  }
+
+  return vHitDelayed_CORRECTED;
+
+}
 
 class HitCut{
 
@@ -124,6 +163,28 @@ class HitCut{
 
 };
 
+class HitShift{
+
+ public:
+  Hit hShift;
+
+  explicit HitShift(const Hit &h_shift) : hShift(h_shift) {}
+
+  void operator()(Hit h){
+    hShift.Print();
+    h - hShift;
+  }
+
+};
+
+void RemoveHitsAfterCut(vector<Hit> &Hits, const Hit& hCut){
+
+  auto itHit = find_if(Hits.begin(),
+					   Hits.end(),
+					   HitCut(hCut));
+  Hits.erase(itHit,Hits.end());
+
+}
 
 class HitCollection {
 
@@ -162,26 +223,26 @@ class HitCollection {
 	delete hD;
   }
 
-  const vector<Hit> &GetHCol() const {
+  vector<Hit> GetHCol() {
 	return hCol;
   }
   void SetHCol(const vector<Hit> &h_col) {
 	hCol = h_col;
   }
-  const string &GetTag() const {
+  string GetTag() {
 	return tag;
   }
   void SetTag(const string &tag) {
 	HitCollection::tag = tag;
   }
 
-  TH2D *GethQVST() const {
+  TH2D *GethQVST() {
 	return hQVST;
   }
-  TH1D *GethTResid() const {
+  TH1D *GethTResid() {
 	return hTResid;
   }
-  TH1D *GethD() const {
+  TH1D *GethD() {
 	return hD;
   }
 
@@ -215,6 +276,50 @@ class HitCollection {
 
 
 };
+
+void ProcessVHit(vector<Hit> vHit, vector<HitCollection> &Evts, string tag,
+				 double TCut=0, double TTrig=0, bool prompt = true){
+
+  if(prompt) {
+
+	if (vHit.size() > 0) {
+
+	  sort(vHit.begin(), vHit.end());
+
+	  Hit hCut(TVector3(0, 0, 0),
+			   0,
+			   TCut + vHit.begin()->GetT());
+	  RemoveHitsAfterCut(vHit, hCut);
+
+	  Evts.push_back(HitCollection(vHit, tag));
+
+	}
+
+  } else {
+
+	if (vHit.size() > 0) {
+
+	  sort(vHit.begin(), vHit.end());
+
+	  Hit PreTrig(TVector3(0., 0., 0.),
+				  0,
+				  TTrig);
+	  vector<Hit> vHit_CORRECTED = CorrectDelayedHits(vHit, PreTrig);
+
+	  Hit hCut(TVector3(0, 0, 0),
+			   0,
+			   TCut + vHit_CORRECTED.begin()->GetT());
+	  RemoveHitsAfterCut(vHit_CORRECTED, hCut);
+
+	  Evts.emplace_back(HitCollection(vHit_CORRECTED, tag));
+
+	}
+
+  }
+
+}
+
+
 
 
 void SetPoissonErrors(TH1D *h){
@@ -254,7 +359,7 @@ double EvalL(double Nobs, double Npred){
   double L;
   if (Nobs>0 && Npred>0)L=Npred-Nobs+Nobs*TMath::Log(Nobs/Npred);
   else L=Npred;
-  L=-L;
+  L = -L;
   return L;
 }
 
@@ -288,6 +393,59 @@ double WalkAndEvalNLL(TVector3 X_GUESS, HitCollection itEvt,
   return NLL_val;
 }
 
+
+
+void FitTResid(TH1D *hTResidPDF, vector<HitCollection> Evts, TH1D *hVtxRes[3]){
+
+  cout << "FIT " << endl;
+
+  ProgressBar progressBar(Evts.size(), 70);
+
+  for(auto itEvt: Evts){
+
+	// record the tick
+	++progressBar;
+
+	// Set seed
+	TRandom3 r(0);
+
+	const int nWalk = 100;
+
+	// Set NLL array
+	vector<double> NLL;
+	vector<TVector3> POS_GUESS;
+
+	// Set seed between [minGuess, maxGuess]mm
+	const double minGuess = -1000; // mm
+	const double maxGuess = 1000; // mm
+
+	for(int iWalk=0; iWalk<nWalk; iWalk++){
+
+	  TVector3 X_GUESS(r.Uniform(minGuess,maxGuess),
+					   r.Uniform(minGuess,maxGuess),
+					   r.Uniform(minGuess,maxGuess));
+
+	  double NLL_val = WalkAndEvalNLL(X_GUESS, itEvt, hTResidPDF);
+
+	  NLL.emplace_back(NLL_val);
+	  POS_GUESS.emplace_back(X_GUESS);
+
+	}
+
+	int maxNLL = distance(NLL.begin(),max_element(NLL.begin(),NLL.end()));
+
+	for(int iPos=0; iPos<3; iPos++){
+	  hVtxRes[iPos]->Fill(POS_GUESS[maxNLL](iPos));
+	}
+
+	// display the bar
+	progressBar.display();
+
+  }
+
+  cout << endl;
+
+}
 
 void FitPos(TH1D *h, TF1 *fit){
 
@@ -335,10 +493,6 @@ void ShowUsage(string name){
 	   << "\t-mint\tSet min val for tresid hist (double)\n"
 	   << "\t-maxt\tSet max val for tresid hist (double)\n"
 
-	   << "\t-dbins\tSet nb bins for distance hist (int)\n"
-	   << "\t-mind\tSet min val for distance hist (double)\n"
-	   << "\t-maxd\tSet max val for distance hist (double)\n"
-
 	   << "\t-mc\tinput file (ROOT)\n"
 	   << "\t-pdf\tpdf file (ROOT)\n"
 	   << endl;
@@ -350,7 +504,6 @@ void ProcessArgs(TApplication *theApp, string *filename,
 				 int *User_nEvts,
 				 bool *User_batch,
 				 int *User_nTResidBins, double *User_minTResid, double *User_maxTResid,
-				 int *User_nDBins, double *User_minD, double *User_maxD,
 				 string *User_fPDF) {
 
   // Reading user input parameters
@@ -378,12 +531,6 @@ void ProcessArgs(TApplication *theApp, string *filename,
 	  *User_minTResid = stod(theApp->Argv(++i));
 	} else if ((arg == "-maxt")) {
 	  *User_maxTResid = stod(theApp->Argv(++i));
-	} else if ((arg == "-dbins")) {
-	  *User_nDBins = stoi(theApp->Argv(++i));
-	} else if ((arg == "-mind")) {
-	  *User_minD = stod(theApp->Argv(++i));
-	} else if ((arg == "-maxd")) {
-	  *User_maxD = stod(theApp->Argv(++i));
 	} else if ((arg == "-mc")) {
 	  *filename = theApp->Argv(++i);
 	} else if ((arg == "-pdf")) {
