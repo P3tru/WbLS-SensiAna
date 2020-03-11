@@ -107,8 +107,8 @@ class FitPosTime {
 	TAvg = hT->GetMean();
 
 	if(hPDF){
-	  // FitTResid();
-	  FitOnGridTResid();
+	  FitTResid();
+	  // FitOnGridTResid();
 	}
 
   }
@@ -211,13 +211,13 @@ class FitPosTime {
   void GenerateSeed(TVector3 *X_SEED, double *T_SEED,
 					TRandom3 *r = new TRandom3(0)){
 
-	const double sigmaPosGuess = 1000; //mm
+	const double sigmaPosGuess = 1000.; //mm
 
 	X_SEED->SetXYZ(r->Gaus(0, sigmaPosGuess),
 				   r->Gaus(0, sigmaPosGuess),
 				   r->Gaus(0, sigmaPosGuess));
 
-	const double sigmaTGuess = 20;
+	const double sigmaTGuess = 20.;
 
 	*T_SEED = r->Gaus(0, sigmaTGuess);
 
@@ -236,8 +236,8 @@ class FitPosTime {
   void GenerateMCMCSeed(TVector3 *X_SEED, double *T_SEED,
 						TRandom3 *r = new TRandom3(0)){
 
-	const double sigmaPosGuess = 100.; //mm
-	const double sigmaTGuess = 10;
+	const double sigmaPosGuess = 500.; //mm
+	const double sigmaTGuess = 10.;
 
 	if(NLL.size()>1){
 
@@ -248,14 +248,18 @@ class FitPosTime {
 					  r->Gaus(POS_GUESS[iWalk].y(), sigmaPosGuess),
 					  r->Gaus(POS_GUESS[iWalk].z(), sigmaPosGuess));
 
-	  double AcceptanceRatio = TMath::Gaus(X_TEST.x()+X_TEST.y()+X_TEST.z(),
-										   Pos_TRUTH.x()+Pos_TRUTH.y()+Pos_TRUTH.z(),
-										   sqrt(3)*sigmaPosGuess,
-										   kTRUE);
+	  double AcceptanceRatio = TMath::Gaus(X_TEST.Mag(),
+										   Pos_TRUTH.Mag(),
+										   sigmaPosGuess,
+										   kFALSE);
+
+	  // hAcptRatio->Fill(AcceptanceRatio);
 
 	  double Test = r->Uniform(0,1);
 
 	  if(AcceptanceRatio > Test){
+
+		// hAcptRatioSuccess->Fill(AcceptanceRatio);
 
 	    *X_SEED = X_TEST;
 
@@ -272,9 +276,9 @@ class FitPosTime {
 
 
 	  AcceptanceRatio = TMath::Gaus(T_TEST,
-									0,
+									T_TRUTH,
 									sigmaTGuess,
-									kTRUE);
+									kFALSE);
 
 	  Test = r->Uniform(0,1);
 
@@ -300,7 +304,7 @@ class FitPosTime {
   void GenerateGradDescentSeed(TVector3 *X_SEED, double *T_SEED,
 							   TRandom3 *r = new TRandom3(0)){
 
-    const double alpha = 0.5;
+    const double alpha = 0.25;
 
 	if(NLL.size()>2){
 
@@ -315,10 +319,8 @@ class FitPosTime {
 
 	  if(DNLL < 0){
 
-	    // cout << "AcceptRatio: " << AcceptRatio << endl;
-
-		*X_SEED = *X_SEED + (1-AcceptRatio)*DPOS;
-		*T_SEED = *T_SEED + (1-AcceptRatio)*DT;
+		*X_SEED = *X_SEED + alpha*DPOS;
+		*T_SEED = *T_SEED + alpha*DT;
 
 		hAcptRatioSuccess->Fill(AcceptRatio);
 
@@ -340,8 +342,8 @@ class FitPosTime {
 
 	NbBinsAxis = 10;
 	BinWidthAxis = 1000/NbBinsAxis;
-	SizeGridPos = NbBinsAxis*NbBinsAxis*NbBinsAxis; // 20^3
-	SizeGridTime = 50;
+	SizeGridPos = NbBinsAxis*NbBinsAxis*NbBinsAxis; // NbBinsAxis^3
+	SizeGridTime = 10;
 
   }
 
@@ -419,18 +421,18 @@ class FitPosTime {
 
 	const int nWalk = 1e5;
 
-	hAcptRatio = new TH1D("hAcptRatio","Acceptance Ratio",
-						  1001,-0.05,10.05);
-	hAcptRatioSuccess = new TH1D("hAcptRatioSuccess","Acceptance Ratio",
-								 1001,-0.05,10.05);
+	// hAcptRatio = new TH1D("hAcptRatio","Acceptance Ratio",
+	// 					  101,-0.05,1.05);
+	// hAcptRatioSuccess = new TH1D("hAcptRatioSuccess","Acceptance Ratio",
+	// 							 101,-0.05,1.05);
 
 	for(int iWalk=0; iWalk<nWalk; iWalk++){
 
 	  TVector3 X_SEED;
 	  double T_SEED;
 	  // GenerateSeed(&X_SEED, &T_SEED, &r);
-	  // GenerateMCMCSeed(&X_SEED, &T_SEED, &r);
-	  GenerateGradDescentSeed(&X_SEED, &T_SEED, &r);
+	  GenerateMCMCSeed(&X_SEED, &T_SEED, &r);
+	  // GenerateGradDescentSeed(&X_SEED, &T_SEED, &r);
 
 	  if(NLL.size()>1){
 	    if(POS_GUESS[POS_GUESS.size()-1] == X_SEED && T_GUESS[T_GUESS.size()-1] == T_SEED)
@@ -539,9 +541,10 @@ class FitPosTime {
 	hTResidGuess->Draw("");
 
 	if(hAcptRatio){
-	  hAcptRatio->Draw();
 	  c1 = new TCanvas("cTAcc", "cAcc", 800, 600);
 	  c1->SetGrid();
+	  c1->SetLogy();
+	  hAcptRatio->Draw();
 	  if(hAcptRatioSuccess){
 		hAcptRatioSuccess->SetLineColor(kRed-4);
 		hAcptRatioSuccess->Draw("SAME");

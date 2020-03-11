@@ -13,7 +13,7 @@
 
 /////////////////////////   USER  ///////////////////////////
 #include <HitClass.hh>
-// #include "utils.hh"
+#include "utils.hh"
 
 TH1D *GetHPDF(const char *filename, const char *histname) {
   TFile *fPDF = new TFile(filename);
@@ -142,9 +142,9 @@ void ProcessArgs(TApplication *theApp, string *filename,
   if(filename->empty()){
 	cout << "ERROR: No MC input file provided!" << endl;
 	exit(EXIT_FAILURE);
-  // } else if(!IsFileExist(*filename)){
-	// cout << "ERROR: MC file doesn't exist!!" << endl;
-	// exit(EXIT_FAILURE);
+  } else if(!IsFileExist(*filename)){
+	cout << "ERROR: MC file doesn't exist!!" << endl;
+	exit(EXIT_FAILURE);
   }
 
 }
