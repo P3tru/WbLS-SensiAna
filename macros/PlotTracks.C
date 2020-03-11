@@ -26,29 +26,29 @@ void PlotTracks(const char *file=NULL){
 
     const int nbTracks = mc->GetMCTrackCount();
 
-    for(int iTrack = 0; iTrack<nbTracks; iTrack++){
+	for(int iTrack = 0; iTrack<nbTracks; iTrack++){
 
-      RAT::DS::MCTrack * mctrack = mc->GetMCTrack(iTrack);
+	  RAT::DS::MCTrack * mctrack = mc->GetMCTrack(iTrack);
 
-      int originalID = -1;
+	  int originalID = -1;
 
-      if(mctrack->GetParentID() == 0){
-	std::cout << "Evt#" << iEvt
-		  << " Primary particle: " << mctrack->GetParticleName()
-		  << " With trackID: " << mctrack->GetID() << std::endl;
+	  if(mctrack->GetParentID() == 0){
+		std::cout << "Evt#" << iEvt
+				  << " Primary particle: " << mctrack->GetParticleName()
+				  << " With trackID: " << mctrack->GetID() << std::endl;
 
-	originalID=mctrack->GetID();
+		originalID=mctrack->GetID();
 
-	mctrack->PruneIntermediateMCTrackSteps();
-	std::cout<< "Process at end of track: " << mctrack->GetMCTrackStep(1)->GetProcess() << std::endl;	
-      } else if(mctrack->GetParentID() == 1){
-	std::cout << "Evt#" << iEvt
-		  << " Primary particle: " << mctrack->GetParticleName()
-		  << " With trackID: " << mctrack->GetID() << std::endl;
+		mctrack->PruneIntermediateMCTrackSteps();
+		std::cout<< "Process at end of track: " << mctrack->GetMCTrackStep(1)->GetProcess() << std::endl;
+	  } else if(mctrack->GetParentID() == 1){
+		std::cout << "Evt#" << iEvt
+				  << " Primary particle: " << mctrack->GetParticleName()
+				  << " With trackID: " << mctrack->GetID() << std::endl;
 
-	mctrack->PruneIntermediateMCTrackSteps();
-	std::cout<< "Process at end of track: " << mctrack->GetMCTrackStep(1)->GetProcess() << std::endl;  
-      }
+		mctrack->PruneIntermediateMCTrackSteps();
+		std::cout<< "Process at end of track: " << mctrack->GetMCTrackStep(1)->GetProcess() << std::endl;
+	  }
 
 
       

@@ -17,3 +17,8 @@ PECounting
 # Outputs
 *.jpg
 *.png
+
+# Perso
+Blackhole.C
+FitMacro.C
+ProgressBar.hpp
