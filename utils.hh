@@ -8,7 +8,7 @@
 ///////////////////////// STL C/C++ /////////////////////////
 #include <iostream>
 #include <string>
-
+#include <vector>
 #include <sys/stat.h>
 
 /////////////////////////   BOOST   /////////////////////////
@@ -16,19 +16,22 @@
 
 /////////////////////////   ROOT   //////////////////////////
 #include <TStyle.h>
+#include <TVector3.h>
 
 /////////////////////////   RAT   ///////////////////////////
 
-std::string ExtractFilenameFromPath(std::string pathname){
+using namespace std;
+
+string ExtractFilenameFromPath(string pathname){
 
   boost::filesystem::path p(pathname);
   return p.filename().string();
 
 }
 
-std::vector<double> CorrectBinRangeArray(std::vector<double> inputArray){
+vector<double> CorrectBinRangeArray(vector<double> inputArray){
 
-  std::vector<double> output;
+  vector<double> output;
   output.resize(inputArray.size()+1);
 
   double DeltaBin0 = inputArray[1] - inputArray[0];
@@ -157,7 +160,7 @@ void SetBasicTH1Style(TH1 *h,
 
 }
 
-bool IsFileExist(const std::string& name) {
+bool IsFileExist(const string& name) {
   struct stat buffer;
   return (stat (name.c_str(), &buffer) == 0);
 }
@@ -174,6 +177,20 @@ Double_t fitGaus(Double_t *x,Double_t *par) {
   if (par[2]!=0) arg = (x[0] - par[1])/par[2];
   Double_t fitval = par[0]*TMath::Exp(-0.5*arg*arg);
   return fitval;
+
+}
+
+// define a function with 3 parameters
+Double_t fitExpo(Double_t *x,Double_t *par) {
+
+  return par[0]*TMath::Exp(-x[0]/par[1]);
+
+}
+
+void PrintPos(TVector3 Pos){
+  cout << " X: " << Pos.x()
+	   << " Y: " << Pos.y()
+	   << " Z: " << Pos.z() << endl;
 
 }
 

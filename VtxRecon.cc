@@ -57,11 +57,14 @@ int main(int argc, char *argv[]) {
 
   bool User_batch = false;
 
+  bool User_IsDelay = false;
+
   // READ input parameters
   ProcessArgs(&theApp,&inputName,
 			  &User_PromptCut,
 			  &User_nEvts,
 			  &User_batch,
+			  &User_IsDelay,
 			  &User_nTResidBins, &User_minTResid, &User_maxTResid,
 			  &User_fPDF);
 
@@ -96,6 +99,17 @@ int main(int argc, char *argv[]) {
   SetBasicTH1Style(hTResidualsDelayed, kBlue-4);
   hTResidualsDelayed->Sumw2();
 
+  auto *hDT = new TH1D("hDT", "#Delta T between prompt and delayed",
+					   100, 0., 1.e6);
+  SetBasicTH1Style(hDT, kBlue-4);
+  hDT->Sumw2();
+
+  const double minDRRes = -0.5; // mm
+  const double maxDRRes = 10000.5; // mm
+  const int NbBinsDRRes = 101; // dm resolution
+  auto *hDR = new TH1D("hDR", "#Delta R between prompt and delayed",
+					   NbBinsDRRes,minDRRes,maxDRRes);
+
 
   // #### #### #### #### #### #### #### #### #### #### #### #### //
   // ####                CREATE HIT COLLECTION              #### //
@@ -108,8 +122,6 @@ int main(int argc, char *argv[]) {
   // #### #### #### #### #### #### #### #### #### #### #### #### //
   // ####                   CREATE PDFs                     #### //
   // #### #### #### #### #### #### #### #### #### #### #### #### //
-
-  int nEvtWithHits = 0;
 
   auto *fMC = new TFile(inputName.c_str());
 
@@ -192,12 +204,17 @@ int main(int argc, char *argv[]) {
 
 	  } // END FOR iPMT
 
+	  // Recover time of first hit for each collection,
+	  // defining for now the trigger time
+	  double TPrompt = -1;
+	  double TDelayed = -1;
+
 	  // ################ //
 	  // APPLY PROMPT CUT //
 	  // ################ //
 
 	  ProcessVHit(vHit,Evts,Form("Evt%d",iEvt),
-				  PromptCut);
+				  PromptCut, 0,true,&TPrompt);
 
 
 	  // ########################################################## //
@@ -207,7 +224,7 @@ int main(int argc, char *argv[]) {
 	  // ########################################################## //
 
 	  ProcessVHit(vHitDelayed,EvtsDelayed,Form("DELAYED_Evt%d",iEvt),
-				  PromptCut, 32, false);
+				  PromptCut, 32, false, &TDelayed);
 
 	  if(vHitDelayed.size() > 0) {
 
@@ -220,6 +237,8 @@ int main(int argc, char *argv[]) {
 
 	  }
 
+	  hDT->Fill(TDelayed-TPrompt);
+
 	  // display the bar
 	  progressBar.display();
 
@@ -227,7 +246,8 @@ int main(int argc, char *argv[]) {
 
   } else {
 
-	cout << "File: " << ExtractFilenameFromPath(inputName) << " not open somehow!?" << endl;
+	cout << "File: " << ExtractFilenameFromPath(inputName)
+		 << " not open somehow!?" << endl;
 
   } // END IF FILE MC
 
@@ -241,22 +261,35 @@ int main(int argc, char *argv[]) {
   // ####                        FIT                        #### //
   // #### #### #### #### #### #### #### #### #### #### #### #### //
 
-  bool DoYouWannaFit = true; // A vos risques et perils
+  bool DoYouWannaFit = true; // pelligro ma donna
 
-  const double minPosRes = -1000.5;
-  const double maxPosRes = 1000.5;
-  const int NbBinsPosRes = 101; // cm resolution
+  const double minPosRes = -1000.5; // mm
+  const double maxPosRes = 1000.5; // mm
+  const int NbBinsPosRes = 21; // dm resolution
 
-  TH1D *hVtxRes[3];
+  TH1D *hVtxResPrompt[3];
+  TH1D *hVtxResDelayed[3];
 
   for(int iAxis=0; iAxis<3; iAxis++){
-    hVtxRes[iAxis] = new TH1D(Form("hVtxRes%d",iAxis),"Vtx reconstruction",
-							  NbBinsPosRes, minPosRes, maxPosRes);
+	hVtxResPrompt[iAxis] = new TH1D(Form("hVtxResPrompt%d",iAxis),
+									"Vtx reconstruction",
+									NbBinsPosRes, minPosRes, maxPosRes);
+	hVtxResDelayed[iAxis] = new TH1D(Form("hVtxResDelayed%d",iAxis),
+									"Vtx reconstruction",
+									NbBinsPosRes, minPosRes, maxPosRes);
   }
 
   if(DoYouWannaFit){
 
-    FitTResid(hTResidualsDelayed, EvtsDelayed, hVtxRes);
+    vector<TVector3> POS_PROMPT;
+
+	FitTResid(hTResiduals, Evts, hVtxResPrompt, &POS_PROMPT);
+
+	vector<TVector3> POS_DELAYED;
+
+    FitTResid(hTResidualsDelayed, EvtsDelayed, hVtxResDelayed, &POS_DELAYED);
+
+    CreateDRHist(hDR, POS_PROMPT, POS_DELAYED);
 
   }
 
@@ -273,6 +306,19 @@ int main(int argc, char *argv[]) {
   c1->SetGrid();
   hTResidualsDelayed->Draw();
 
+  c1 = new TCanvas("cDT","cDT", 800,600);
+  c1->SetGrid();
+  hDT->Draw();
+  TF1 *fExpo;
+  fExpo = new TF1("fExpo",fitExpo,0.,1.e6,2);
+  fExpo->SetParName(0,"C0");fExpo->SetParameter(0,hDT->GetMaximum());
+  fExpo->SetParName(1,"tau");fExpo->SetParameter(1,200);
+  hDT->Fit("fExpo", "RLE");
+
+  c1 = new TCanvas("cDR","cDR", 800,600);
+  c1->SetGrid();
+  hDR->Draw();
+
   c1 = new TCanvas("cVTX","cVTX", 800,600);
   c1->SetGrid();
   TF1 *fGaus;
@@ -282,17 +328,34 @@ int main(int argc, char *argv[]) {
   fGaus->SetParName(2,"sigma");
 
   for(int iAxis=0; iAxis<3; iAxis++){
-    if(hVtxRes[iAxis]){
-	  SetBasicTH1Style(hVtxRes[iAxis], kBlue);
-	  hVtxRes[iAxis]->Draw("SAME PLC PMC");
-	  FitPos(hVtxRes[iAxis], fGaus);
-	  TFitResultPtr r = hVtxRes[iAxis]->Fit("fGaus", "RLQE");
+    if(hVtxResPrompt[iAxis]){
+	  SetBasicTH1Style(hVtxResPrompt[iAxis], kBlue);
+	  hVtxResPrompt[iAxis]->Draw("SAME PLC PMC");
+	  FitPos(hVtxResPrompt[iAxis], fGaus);
+	  TFitResultPtr r = hVtxResPrompt[iAxis]->Fit("fGaus", "RLQE");
 	  if(r == 0){
-		SetFitStyle(hVtxRes[iAxis],kBlue-4);
+		SetFitStyle(hVtxResPrompt[iAxis],kBlue-4);
 		cout << iAxis << endl;
 		PrintFitResult(fGaus);
 	  }
     }
+  }
+
+  c1 = new TCanvas("cVTXDelayed","cVTXDelayed", 800,600);
+  c1->SetGrid();
+
+  for(int iAxis=0; iAxis<3; iAxis++){
+	if(hVtxResDelayed[iAxis]){
+	  SetBasicTH1Style(hVtxResDelayed[iAxis], kBlue);
+	  hVtxResDelayed[iAxis]->Draw("SAME PLC PMC");
+	  FitPos(hVtxResDelayed[iAxis], fGaus);
+	  TFitResultPtr r = hVtxResDelayed[iAxis]->Fit("fGaus", "RLQE");
+	  if(r == 0){
+		SetFitStyle(hVtxResDelayed[iAxis],kBlue-4);
+		cout << iAxis << endl;
+		PrintFitResult(fGaus);
+	  }
+	}
   }
 
   /////////////////////////

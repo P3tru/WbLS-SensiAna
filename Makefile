@@ -75,5 +75,17 @@ VtxRecon: VtxRecon.o $(OBJS)
 	$(CXX) $(CPPFLAGS) -o VtxRecon VtxRecon.cc $(OBJS) $(EXTRALIBS)
 	$(RM) VtxRecon.o $(OBJS)
 
+PECounting: PECounting.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o PECounting PECounting.cc $(OBJS) $(EXTRALIBS)
+	$(RM) PECounting.o $(OBJS)
+
+SelectIBD: SelectIBD.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o SelectIBD SelectIBD.cc $(OBJS) $(EXTRALIBS)
+	$(RM) SelectIBD.o $(OBJS)
+
+CreatePDF: CreatePDF.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o CreatePDF CreatePDF.cc $(OBJS) $(EXTRALIBS)
+	$(RM) CreatePDF.o $(OBJS)
+
 clean:
-	$(RM) $(OBJS) TemplateAnalysis TemplateAnalysisMT EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix PlotPEVSNHits VtxRecon
+	$(RM) $(OBJS) TemplateAnalysis TemplateAnalysisMT EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix PlotPEVSNHits VtxRecon SelectIBD CreatePDF

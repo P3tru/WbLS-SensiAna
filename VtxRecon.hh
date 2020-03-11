@@ -25,143 +25,13 @@
 /////////////////////////   USER  ///////////////////////////
 #include "utils.hh"
 
-#define PI 3.14159
-#define C 299.792458 // mm/ns
+#include <HitClass.hh>
+#include <HitFunctions.hh>
 
-using namespace std;
+#include <LL.hh>
 
-class Hit {
+#include "ProgressBar.hpp"
 
- protected:
-  TVector3 Pos;
-
-  double Q;
-  double T;
-
-  double TResid;
-  double D;
-
- public:
-  Hit() : Pos(0.,0.,0.), Q(-1), T(-1), TResid(-1), D(-1){};
-  Hit(TVector3 p, double q=0., double t=0., double tr=-1., double d=-1.) : Pos(p), Q(q), T(t), TResid(tr), D(d){};
-  ~Hit(){};
-
-  const TVector3 &GetPos() const {
-	return Pos;
-  }
-  void SetPos(const TVector3 &pos) {
-	Pos = pos;
-  }
-
-  double GetQ(){ return Q; };
-  void SetQ(double x){ Q = x; };
-  double GetT(){ return T; };
-  void SetT(double x){ T = x; };
-
-  double GetTResid() const {
-	return TResid;
-  }
-  void SetTResid(double t_resid) {
-	TResid = t_resid;
-  }
-  double GetD() const {
-	return D;
-  }
-  void SetD(double d) {
-	D = d;
-  }
-
-  double CalculateDistance(const TVector3& Origin = TVector3(0,0,0)){
-    return TVector3(Pos-Origin).Mag();
-  };
-  double CalculateTResid(const TVector3& Origin = TVector3(0,0,0)){
-    return T - (TVector3(Pos-Origin).Mag())/C;
-  };
-
-  bool operator==(const Hit &rhs) const {
-	return T == rhs.T;
-  }
-  bool operator!=(const Hit &rhs) const {
-	return !(rhs == *this);
-  }
-  bool operator<(const Hit &rhs) const {
-	return T < rhs.T;
-  }
-  bool operator>(const Hit &rhs) const {
-	return rhs < *this;
-  }
-  bool operator<=(const Hit &rhs) const {
-	return !(rhs < *this);
-  }
-  bool operator>=(const Hit &rhs) const {
-	return !(*this < rhs);
-  }
-
-  void operator+=(Hit rhs) {
-    SetT(T+rhs.GetT());
-  }
-  void operator-=(Hit rhs) {
-	SetT(T-rhs.GetT());
-  }
-
-  void Print() const {
-    cout << "X: " << Pos.x()
-		 << " Y: " << Pos.y()
-		 << " Z: " << Pos.z()
-		 << " Q: " << Q
-		 << " T: " << T << endl;
-  }
-
-};
-
-Hit operator-(Hit h1, Hit h2){
-  h1.SetT(h1.GetT()-h2.GetT());
-  return h1;
-}
-
-Hit operator+(Hit h1, Hit h2){
-  h1.SetT(h1.GetT()+h2.GetT());
-  return h1;
-}
-
-
-void PrintVHits(vector<Hit> const Hits){
-  for(auto itHit : Hits){
-	itHit.Print();
-  }
-}
-
-
-vector<Hit> CorrectDelayedHits(vector<Hit> rawHits, Hit PreTrig){
-
-  vector<Hit> vHitDelayed_CORRECTED;
-  for(auto itHit : rawHits){
-
-	itHit = itHit - rawHits[0] + PreTrig;
-	vHitDelayed_CORRECTED.emplace_back(itHit);
-
-  }
-
-  return vHitDelayed_CORRECTED;
-
-}
-
-class HitCut{
-
- public:
-  Hit hCut;
-
-  explicit HitCut(const Hit &h_cut) : hCut(h_cut) {}
-
-  int operator()(Hit h){
-	bool YesItIs = false;
-	if(h>hCut){
-	  YesItIs = true;
-	}
-	return YesItIs;
-  }
-
-};
 
 class HitShift{
 
@@ -176,15 +46,6 @@ class HitShift{
   }
 
 };
-
-void RemoveHitsAfterCut(vector<Hit> &Hits, const Hit& hCut){
-
-  auto itHit = find_if(Hits.begin(),
-					   Hits.end(),
-					   HitCut(hCut));
-  Hits.erase(itHit,Hits.end());
-
-}
 
 class HitCollection {
 
@@ -278,13 +139,16 @@ class HitCollection {
 };
 
 void ProcessVHit(vector<Hit> vHit, vector<HitCollection> &Evts, string tag,
-				 double TCut=0, double TTrig=0, bool prompt = true){
+				 double TCut=0, double TTrig=0, bool prompt = true,
+				 double *TFirstHit=NULL){
 
   if(prompt) {
 
 	if (vHit.size() > 0) {
 
 	  sort(vHit.begin(), vHit.end());
+
+	  *TFirstHit = vHit[0].GetT();
 
 	  Hit hCut(TVector3(0, 0, 0),
 			   0,
@@ -301,7 +165,9 @@ void ProcessVHit(vector<Hit> vHit, vector<HitCollection> &Evts, string tag,
 
 	  sort(vHit.begin(), vHit.end());
 
-	  Hit PreTrig(TVector3(0., 0., 0.),
+	  *TFirstHit = vHit[0].GetT();
+
+ 	  Hit PreTrig(TVector3(0., 0., 0.),
 				  0,
 				  TTrig);
 	  vector<Hit> vHit_CORRECTED = CorrectDelayedHits(vHit, PreTrig);
@@ -354,16 +220,6 @@ void SetBinomialErrors(TH1D *h) {
 
 }
 
-
-double EvalL(double Nobs, double Npred){
-  double L;
-  if (Nobs>0 && Npred>0)L=Npred-Nobs+Nobs*TMath::Log(Nobs/Npred);
-  else L=Npred;
-  L = -L;
-  return L;
-}
-
-
 double WalkAndEvalNLL(TVector3 X_GUESS, HitCollection itEvt,
 					  TH1D *hPDF){
 
@@ -395,7 +251,9 @@ double WalkAndEvalNLL(TVector3 X_GUESS, HitCollection itEvt,
 
 
 
-void FitTResid(TH1D *hTResidPDF, vector<HitCollection> Evts, TH1D *hVtxRes[3]){
+void FitTResid(TH1D *hTResidPDF, vector<HitCollection> Evts,
+			   TH1D *hVtxRes[3],
+			   vector<TVector3> *POS_MLL){
 
   cout << "FIT " << endl;
 
@@ -438,12 +296,22 @@ void FitTResid(TH1D *hTResidPDF, vector<HitCollection> Evts, TH1D *hVtxRes[3]){
 	  hVtxRes[iPos]->Fill(POS_GUESS[maxNLL](iPos));
 	}
 
+	POS_MLL->emplace_back(POS_GUESS[maxNLL]);
+
 	// display the bar
 	progressBar.display();
 
   }
 
   cout << endl;
+
+}
+
+void CreateDRHist(TH1D *hDR, vector<TVector3> PROMPT, vector<TVector3> DELAYED){
+
+  for(int iEvt = 0; iEvt<PROMPT.size(); iEvt++){
+	hDR->Fill(abs((PROMPT[iEvt]-DELAYED[iEvt]).Mag()));
+  }
 
 }
 
@@ -503,6 +371,7 @@ void ProcessArgs(TApplication *theApp, string *filename,
 				 int *User_PromtCut,
 				 int *User_nEvts,
 				 bool *User_batch,
+				 bool *User_IsDelay,
 				 int *User_nTResidBins, double *User_minTResid, double *User_maxTResid,
 				 string *User_fPDF) {
 
@@ -525,6 +394,8 @@ void ProcessArgs(TApplication *theApp, string *filename,
 	  *User_nEvts = stoi(theApp->Argv(++i));
 	} else if ((arg == "-b")) {
 	  *User_batch=true;
+	} else if ((arg == "-del")) {
+	  *User_IsDelay=true;
 	} else if ((arg == "-tbins")) {
 	  *User_nTResidBins = stoi(theApp->Argv(++i));
 	} else if ((arg == "-mint")) {
@@ -550,5 +421,7 @@ void ProcessArgs(TApplication *theApp, string *filename,
   }
 
 }
+
+
 
 #endif //_TEMPLATEANALYSIS_HH_

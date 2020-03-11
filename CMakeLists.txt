@@ -70,3 +70,12 @@ target_link_libraries(PlotPEVSNHits ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEv
 
 add_executable(VtxRecon VtxRecon.cc ${sources} ${headers})
 target_link_libraries(VtxRecon ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
+
+add_executable(PECounting PECounting.cc ${sources} ${headers})
+target_link_libraries(PECounting ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
+
+add_executable(SelectIBD SelectIBD.cc ${sources} ${headers})
+target_link_libraries(SelectIBD ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
+
+add_executable(CreatePDF CreatePDF.cc ${sources} ${headers})
+target_link_libraries(CreatePDF ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)

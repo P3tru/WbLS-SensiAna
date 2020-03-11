@@ -1,6 +1,19 @@
 # Apps
 TemplateAnalysis
+TemplateAnalysisMT
+EventWrapper
+PlotCollectedPE
 CreateEResMatrix
+CreatePosMatrix
+PlotPEVSNHits
+VtxRecon
+SelectIBD
+CreatePDF
+PECounting
 
 # Inputs
 *.txt
+
+# Outputs
+*.jpg
+*.png
