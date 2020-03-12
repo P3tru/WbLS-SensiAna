@@ -7,7 +7,7 @@
 #include <string>
 #include <cmath>
 #include <vector>
-
+#include <algorithm>
 /////////////////////////   USER  ///////////////////////////
 #include "HitClass.hh"
 

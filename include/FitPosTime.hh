@@ -17,6 +17,7 @@
 #include <TH1D.h>
 #include <TRandom3.h>
 #include <TGraph.h>
+#include <TMath.h>
 #include <TH2D.h>
 
 /////////////////////////   RAT   ///////////////////////////

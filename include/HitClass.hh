@@ -12,10 +12,11 @@
 #include <vector>
 
 #include <TVector3.h>
+#include <TMath.h>
 
 
-#define PI 3.14159
-#define C 299.792458 // mm/ns
+//#define PI 3.14159
+//#define C 299.792458 // mm/ns
 
 using namespace std;
 
@@ -64,8 +65,8 @@ class Hit {
   double CalculateDistance(const TVector3& Origin = TVector3(0,0,0)){
 	return TVector3(Pos-Origin).Mag();
   };
-  double CalculateTResid(const TVector3& Origin = TVector3(0,0,0), double SoL = C){
-	return T - (TVector3(Pos-Origin).Mag())/SoL;
+  double CalculateTResid(const TVector3& Origin = TVector3(0,0,0), double SoL = TMath::C()){
+	return T - 1e6*(TVector3(Pos-Origin).Mag())/SoL;
   };
 
   bool operator==(const Hit &rhs) const {
