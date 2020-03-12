@@ -19,7 +19,6 @@ ROOTCFLAGS := $(shell root-config --cflags)
 ROOTLIBS   := $(shell root-config --libs)
 
 ### RAT
-RATROOT := /home/zsoldos/theia/rat-pac
 RATLIBS  := -L$(RATROOT)/lib -lRATEvent
 
 ### BOOST
