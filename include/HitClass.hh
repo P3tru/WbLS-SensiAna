@@ -14,10 +14,6 @@
 #include <TVector3.h>
 #include <TMath.h>
 
-
-//#define PI 3.14159
-//#define C 299.792458 // mm/ns
-
 using namespace std;
 
 class Hit {
