@@ -7,6 +7,7 @@
 #include <string>
 #include <cmath>
 #include <vector>
+#include <TH2D.h>
 
 /////////////////////////   USER  ///////////////////////////
 #include "HitClass.hh"
@@ -48,5 +49,27 @@ vector<Hit> CorrectDelayedHits(vector<Hit> rawHits, const Hit& PreTrig){
   }
 
   return vHitDelayed_CORRECTED;
+
+}
+
+TH2D *GetHQVST(vector<Hit> vHit){
+
+  auto *hQVST = new TH2D("hQVST", "Q VS T",
+						 100, -0.05, 10.05,
+						 100, -0.05, 10.05);
+
+  hQVST->GetXaxis()->SetTitle("Q (PE)");
+  hQVST->GetYaxis()->SetTitle("T (ns)");
+
+  sort(vHit.begin(), vHit.end());
+
+  vector<Hit> vHitCor = CorrectDelayedHits(vHit, Hit(TVector3(0.,0.,0.), 0., 0.));
+
+  for(auto hit: vHitCor){
+    hQVST->Fill(hit.GetQ(), hit.GetT());
+  }
+
+  return hQVST;
+
 
 }

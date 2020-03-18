@@ -15,7 +15,9 @@
 #include "HitClass.hh"
 
 void PrintVHits(vector<Hit> const Hits);
-vector<Hit> CorrectDelayedHits(vector<Hit> rawHits, const Hit& PreTrig);
-void RemoveHitsAfterCut(vector<Hit> &Hits, const Hit& hCut);
+vector<Hit> CorrectDelayedHits(vector<Hit> rawHits,
+							   const Hit& PreTrig = Hit(TVector3(0.,0.,0.), 0., 0.));
+void RemoveHitsAfterCut(vector<Hit> &Hits,
+						const Hit& hCut = Hit(TVector3(0.,0.,0.), 0., 0.));
 
 #endif //_HITFUNCTIONS_HH_
