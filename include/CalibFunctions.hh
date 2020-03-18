@@ -74,7 +74,7 @@ class MCCalib{
 
 	if(FileCalib->IsOpen()){
 
-	  cout << "MCCalib file: " << filename << " open." << endl;
+	  cout << "MCCalib file: " << filename << " open" << endl;
 
 	  TIter next(FileCalib->GetListOfKeys());
 	  TKey *key;
@@ -136,6 +136,8 @@ class MCCalib{
 	  maxE    = vMuPE[vMuPE.size()-1].first;
 	  maxPE   = vMuPE[vMuPE.size()-1].second;
 	  maxHits = vMuHits[vMuHits.size()-1].second;
+
+	  cout << "MCCalib(): maxE=" << maxE << " maxPE=" << maxPE << " maxHits=" << maxHits << endl;
 
 	}
 

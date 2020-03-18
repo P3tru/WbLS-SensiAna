@@ -159,6 +159,9 @@ int main(int argc, char *argv[]) {
 
   MCCalib Cal(User_Calib);
 
+  TH1D *hEPrompt = new TH1D("hEPrompt", "E_{Rec} Prompt",
+							21, -0.5, 10.5);
+
 
   // #### #### #### #### #### #### #### #### #### #### #### #### //
   // ####                CREATE ANALYZER                    #### //
@@ -190,11 +193,21 @@ int main(int argc, char *argv[]) {
 	vector<Hit> vHitDelayed = SplitHitCollection(&vHit, 200);
 
 	// Get E evts
-	double NPE, NHits, E;
+	double NPE=-1; double NHits=-1; double E=-1;
 	if(!User_Calib.empty()){
 
 	  GetNPEAndNHitsFromHits(vHit, &NPE, &NHits);
 	  E = ComputeECalib(Cal, NPE, NHits);
+
+	}
+
+	if(E>0){
+
+	  if(E>MinEPrompt && E<MaxEPrompt){
+
+		hEPrompt->Fill(E);
+
+	  }
 
 	}
 
@@ -238,6 +251,10 @@ int main(int argc, char *argv[]) {
   c1 = new TCanvas("cTime", "cTime", 800, 600);
   c1->SetGrid();
   hTGuess->Draw();
+
+  c1 = new TCanvas("cE", "cE", 800, 600);
+  c1->SetGrid();
+  hEPrompt->Draw();
 
   foutput->cd(); c1->Write();
   foutput->Close();
