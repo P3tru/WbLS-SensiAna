@@ -2,8 +2,8 @@
 // Created by zsoldos on 11/26/19.
 //
 
-#ifndef EVENTWRAPPER__TPARTICLE_HH_
-#define EVENTWRAPPER__TPARTICLE_HH_
+#ifndef _TPARTICLE_HH_
+#define _TPARTICLE_HH_
 
 #include <iostream>
 #include <iomanip>
@@ -48,4 +48,4 @@ class TParticle {
 
 };
 
-#endif //EVENTWRAPPER__TPARTICLE_HH_
+#endif //_TPARTICLE_HH_
