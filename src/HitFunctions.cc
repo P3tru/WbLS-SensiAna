@@ -73,3 +73,18 @@ TH2D *GetHQVST(vector<Hit> vHit){
 
 
 }
+
+void GetNPEAndNHitsFromHits(vector<Hit> Hits, double *NPE, double *NHits){
+
+  double mNPE=0.;
+  int mNHits=0;
+
+  for(auto h:Hits){
+	mNPE+=h.GetQ();
+	mNHits++;
+  }
+
+  *NPE=mNPE;
+  *NHits=mNHits;
+
+}

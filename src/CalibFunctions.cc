@@ -14,7 +14,11 @@ static double GenEBin(){
 
 }
 
-double ComputeLikelihood(const MCCalib& CalibObj, double NPE, double NHits){
+double ComputeECalib(const MCCalib& CalibObj, double NPE, double NHits){
+
+  if( NPE>CalibObj.GetMaxPe() || NHits>CalibObj.GetMaxHits() ){
+    return -1.;
+  }
 
   auto *grL = new TGraph();
 

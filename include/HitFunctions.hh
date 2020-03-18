@@ -19,5 +19,6 @@ vector<Hit> CorrectDelayedHits(vector<Hit> rawHits,
 							   const Hit& PreTrig = Hit(TVector3(0.,0.,0.), 0., 0.));
 void RemoveHitsAfterCut(vector<Hit> &Hits,
 						const Hit& hCut = Hit(TVector3(0.,0.,0.), 0., 0.));
+void GetNPEAndNHitsFromHits(vector<Hit> Hits, double *NPE, double *NHits);
 
 #endif //_HITFUNCTIONS_HH_

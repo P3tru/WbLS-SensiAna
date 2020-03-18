@@ -20,10 +20,12 @@
 #include "utils.hh"
 #include "SelectIBD.hh"
 
-#include <Analyzer.hh>
-#include <HitClass.hh>
-#include <MCFunctions.hh>
-#include <FitPosTime.hh>
+#include "Analyzer.hh"
+#include "HitClass.hh"
+#include "MCFunctions.hh"
+#include "HitFunctions.hh"
+#include "FitPosTime.hh"
+#include "CalibFunctions.hh"
 
 #include "ProgressBar.hpp"
 
@@ -61,6 +63,7 @@ int main(int argc, char *argv[]) {
   // Input parameters
   // There's default value chosen by ternaries below
   string inputName;
+  inputName.clear();
 
   auto User_isBatch = false;
   auto User_nEvts = -1;
@@ -87,7 +90,9 @@ int main(int argc, char *argv[]) {
   auto User_DT = -1.;
 
   string User_Calib;
+  User_Calib.clear();
   string User_fPDF;
+  User_fPDF.clear();
 
   ProcessArgs(&theApp, &inputName,
 			  &User_PromptCut,
@@ -152,6 +157,8 @@ int main(int argc, char *argv[]) {
   // ####                SET CALIBRATION                    #### //
   // #### #### #### #### #### #### #### #### #### #### #### #### //
 
+  MCCalib Cal(User_Calib);
+
 
   // #### #### #### #### #### #### #### #### #### #### #### #### //
   // ####                CREATE ANALYZER                    #### //
@@ -182,17 +189,30 @@ int main(int argc, char *argv[]) {
 	// Split vector hit into prompt and delay
 	vector<Hit> vHitDelayed = SplitHitCollection(&vHit, 200);
 
+	// Get E evts
+	double NPE, NHits, E;
+	if(!User_Calib.empty()){
+
+	  GetNPEAndNHitsFromHits(vHit, &NPE, &NHits);
+	  E = ComputeECalib(Cal, NPE, NHits);
+
+	}
+
 	// Fit position time both events
-	if(hPDF){
-	  FitPosTime FPT_Prompt(TrueOrigin, 0, vHit, hPDF);
+	if(vHit.size()>0){
 
-	  for(int iPos = 0; iPos<3; iPos++) {
+	  if(hPDF){
+		FitPosTime FPT_Prompt(TrueOrigin, 0, vHit, hPDF);
 
-		hPosGuess[iPos]->Fill(FPT_Prompt.GetPos()(iPos));
+		for(int iPos = 0; iPos<3; iPos++) {
+
+		  hPosGuess[iPos]->Fill(FPT_Prompt.GetPos()(iPos));
+
+		}
+
+		hTGuess->Fill(FPT_Prompt.GetT());
 
 	  }
-
-	  hTGuess->Fill(FPT_Prompt.GetT()+FPT_Prompt.GetTAvg());
 
 	}
 

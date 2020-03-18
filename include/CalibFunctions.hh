@@ -22,13 +22,13 @@
 
 using namespace std;
 
-void FitAndRecoverGaussParams(TH1D *h, double *mu, double *sigma);
-void FillPair(TH1D *h, double EBin,
+static void FitAndRecoverGaussParams(TH1D *h, double *mu, double *sigma);
+static void FillPair(TH1D *h, double EBin,
 			  vector< pair<double, double> > *vPMu, vector< pair<double, double> > *vPSig);
-TGraph *CreateGraph(vector< pair<double, double> > *vP);
-TGraphErrors *CreateGraphErrors(vector< pair<double, double> > *vP,
+static TGraph *CreateGraph(vector< pair<double, double> > *vP);
+static TGraphErrors *CreateGraphErrors(vector< pair<double, double> > *vP,
 								vector< pair<double, double> > *vPErr);
-vector<double> GetArray(vector< pair<double, double> > *vP);
+static vector<double> GetArray(vector< pair<double, double> > *vP);
 
 class MCCalib{
 
@@ -44,7 +44,7 @@ class MCCalib{
 
  protected:
 
-  char *filename;
+  string filename;
 
   TGraph *grMuPE;
   TGraph *grSigPE;
@@ -53,11 +53,15 @@ class MCCalib{
 
   vector<double> EBins;
 
+  double maxE;
+  double maxPE;
+  double maxHits;
+
  public:
 
-  explicit MCCalib(char *filename) : filename(filename) {
+  explicit MCCalib(string filename) : filename(filename) {
 
-	auto *FileCalib = TFile::Open(filename);
+	auto *FileCalib = TFile::Open(filename.c_str());
 
 	EBins.resize(100);
 	generate(EBins.begin(), EBins.end(), GenEBin);
@@ -68,33 +72,39 @@ class MCCalib{
 	vector< pair<double, double> > vMuHits;
 	vector< pair<double, double> > vSigHits;
 
-	TIter next(FileCalib->GetListOfKeys());
-	TKey *key;
-	while ((key = (TKey*)next())) {
+	if(FileCalib->IsOpen()){
 
-	  TClass *cl = gROOT->GetClass(key->GetClassName());
-	  if (!cl->InheritsFrom("TH1")) continue;
-	  // X-axis: nPE
-	  // Y-axis: nHits
-	  TH1 *h = (TH1*)key->ReadObj();
+	  cout << "MCCalib file: " << filename << " open." << endl;
 
-	  for(auto EBin:EBins){
+	  TIter next(FileCalib->GetListOfKeys());
+	  TKey *key;
+	  while ((key = (TKey*)next())) {
 
-		if(strcmp(Form("hEbin%.1f", EBin),h->GetName()) == 0){
+		TClass *cl = gROOT->GetClass(key->GetClassName());
+		if (!cl->InheritsFrom("TH1")) continue;
+		// X-axis: nPE
+		// Y-axis: nHits
+		TH1 *h = (TH1*)key->ReadObj();
 
-		  TH1D *hNPE = (TH1D*)FileCalib->Get(Form("hEbin%.1f_px", EBin));
-		  FillPair(hNPE, EBin, &vMuPE, &vSigPE);
+		for(auto EBin:EBins){
 
-		  TH1D *hNHits = (TH1D*)FileCalib->Get(Form("hEbin%.1f_py", EBin));
-		  FillPair(hNHits, EBin, &vMuHits, &vSigHits);
+		  if(strcmp(Form("hEbin%.1f", EBin),h->GetName()) == 0){
 
-		  break;
+			TH1D *hNPE = (TH1D*)FileCalib->Get(Form("hEbin%.1f_px", EBin));
+			FillPair(hNPE, EBin, &vMuPE, &vSigPE);
 
-		} // END if strcmp
+			TH1D *hNHits = (TH1D*)FileCalib->Get(Form("hEbin%.1f_py", EBin));
+			FillPair(hNHits, EBin, &vMuHits, &vSigHits);
 
-	  } // END for EBin
+			break;
 
-	} // END while Key
+		  } // END if strcmp
+
+		} // END for EBin
+
+	  } // END while Key
+
+	} // END if FileCalib IsOpen
 
 	grMuPE=new TGraph();
 	grSigPE=new TGraph();
@@ -121,6 +131,14 @@ class MCCalib{
 	grMuHits->SetBit(TGraph::kIsSortedX);
 	grSigHits->SetBit(TGraph::kIsSortedX);
 
+	if(vMuPE.size()>0 && vMuHits.size()>0){
+
+	  maxE    = vMuPE[vMuPE.size()-1].first;
+	  maxPE   = vMuPE[vMuPE.size()-1].second;
+	  maxHits = vMuHits[vMuHits.size()-1].second;
+
+	}
+
   }
 
   TGraph *GetGrMuPe() const {
@@ -136,7 +154,7 @@ class MCCalib{
 	return grSigHits;
   }
 
-  char *GetFilename() const {
+  const string &GetFilename() const {
 	return filename;
   }
 
@@ -144,9 +162,19 @@ class MCCalib{
 	return EBins;
   }
 
+  double GetMaxE() const {
+	return maxE;
+  }
+  double GetMaxPe() const {
+	return maxPE;
+  }
+  double GetMaxHits() const {
+	return maxHits;
+  }
+
 };
 
-void FitAndRecoverGaussParams(TH1D *h, double *mu, double *sigma){
+static void FitAndRecoverGaussParams(TH1D *h, double *mu, double *sigma){
 
   TF1 *fFit;
   h->Fit("gaus", "Q0");
@@ -162,7 +190,7 @@ void FitAndRecoverGaussParams(TH1D *h, double *mu, double *sigma){
 
 }
 
-void FillPair(TH1D *h, double EBin,
+static void FillPair(TH1D *h, double EBin,
 			  vector< pair<double, double> > *vPMu, vector< pair<double, double> > *vPSig){
 
   double mu, sig;
@@ -172,7 +200,7 @@ void FillPair(TH1D *h, double EBin,
 
 }
 
-TGraph *CreateGraph(vector< pair<double, double> > *vP){
+static TGraph *CreateGraph(vector< pair<double, double> > *vP){
 
   sort(vP->begin(), vP->end());
 
@@ -188,7 +216,7 @@ TGraph *CreateGraph(vector< pair<double, double> > *vP){
 
 }
 
-TGraphErrors *CreateGraphErrors(vector< pair<double, double> > *vP,
+static TGraphErrors *CreateGraphErrors(vector< pair<double, double> > *vP,
 								vector< pair<double, double> > *vPErr){
 
   sort(vP->begin(), vP->end());
@@ -213,7 +241,7 @@ TGraphErrors *CreateGraphErrors(vector< pair<double, double> > *vP,
 
 }
 
-vector<double> GetArray(vector< pair<double, double> > *vP){
+static vector<double> GetArray(vector< pair<double, double> > *vP){
 
   sort(vP->begin(), vP->end());
 
@@ -230,6 +258,6 @@ vector<double> GetArray(vector< pair<double, double> > *vP){
 }
 
 
-double ComputeLikelihood(const MCCalib& CalibObj, double NPE, double NHits);
+double ComputeECalib(const MCCalib& CalibObj, double NPE, double NHits);
 
 #endif
