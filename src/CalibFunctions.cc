@@ -6,7 +6,7 @@
 
 #include "CalibFunctions.hh"
 
-static double GenERes(){
+static double GenEBin(){
 
   static int iBin=1;
   static double EBin = 0.1;
@@ -14,26 +14,23 @@ static double GenERes(){
 
 }
 
-double ComputeLikelihood(MCCalib CalibObj, double NPE, double NHits){
-
-  vector<double> ERess(100);
-  generate(ERess.begin(), ERess.end(), GenERes);
+double ComputeLikelihood(const MCCalib& CalibObj, double NPE, double NHits){
 
   auto *grL = new TGraph();
 
-  for(auto ERes: ERess){
+  for(auto EBin: CalibObj.GetEBins()){
 
 	double muPE, sigPE;
 	double muHits, sigHits;
 
-	muPE = CalibObj.GetGrMuPe()->Eval(ERes, 0 ,"S");
-	sigPE = CalibObj.GetGrSigPe()->Eval(ERes, 0 ,"S");
+	muPE = CalibObj.GetGrMuPe()->Eval(EBin, 0 ,"S");
+	sigPE = CalibObj.GetGrSigPe()->Eval(EBin, 0 ,"S");
 
-	muHits = CalibObj.GetGrMuHits()->Eval(ERes, 0 ,"S");
-	sigHits = CalibObj.GetGrSigHits()->Eval(ERes, 0 ,"S");
+	muHits = CalibObj.GetGrMuHits()->Eval(EBin, 0 ,"S");
+	sigHits = CalibObj.GetGrSigHits()->Eval(EBin, 0 ,"S");
 
 	double Likelihood = TMath::Gaus(NPE, muPE, sigPE)*TMath::Gaus(NHits, muHits, sigHits);
-	grL->SetPoint(grL->GetN(), ERes, Likelihood);
+	grL->SetPoint(grL->GetN(), EBin, Likelihood);
 
   }
 

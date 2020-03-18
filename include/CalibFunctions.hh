@@ -32,16 +32,7 @@ vector<double> GetArray(vector< pair<double, double> > *vP);
 
 class MCCalib{
 
- protected:
-
-  char *filename;
-
-  TGraph *grMuPE;
-  TGraph *grSigPE;
-  TGraph *grMuHits;
-  TGraph *grSigHits;
-
- public:
+ private:
 
   static double GenEBin(){
 
@@ -51,12 +42,24 @@ class MCCalib{
 
   }
 
+ protected:
+
+  char *filename;
+
+  TGraph *grMuPE;
+  TGraph *grSigPE;
+  TGraph *grMuHits;
+  TGraph *grSigHits;
+
+  vector<double> EBins;
+
+ public:
 
   explicit MCCalib(char *filename) : filename(filename) {
 
 	auto *FileCalib = TFile::Open(filename);
 
-	vector<double> EBins(100);
+	EBins.resize(100);
 	generate(EBins.begin(), EBins.end(), GenEBin);
 
 	vector< pair<double, double> > vMuPE;
@@ -135,6 +138,10 @@ class MCCalib{
 
   char *GetFilename() const {
 	return filename;
+  }
+
+  const vector<double> &GetEBins() const {
+	return EBins;
   }
 
 };
@@ -223,6 +230,6 @@ vector<double> GetArray(vector< pair<double, double> > *vP){
 }
 
 
-double ComputeLikelihood(MCCalib CalibObj, double NPE, double NHits);
+double ComputeLikelihood(const MCCalib& CalibObj, double NPE, double NHits);
 
 #endif
