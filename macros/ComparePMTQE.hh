@@ -17,6 +17,13 @@ double nCerenkov(double E, double l, double n, double lambda){
   
 }
 
+double MeV2lambda(double MeV){
+
+    const double hc = 1.23984193e-3; //MeV.nm
+  return hc/lambda;
+
+}
+
 double lambda2MeV(double lambda){
 
   const double hc = 1.23984193e-3; //MeV.nm
