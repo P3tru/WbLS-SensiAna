@@ -2,8 +2,8 @@
 // Created by zsoldos on 2/21/20.
 //
 
-#ifndef _SELECTIBD_HH_
-#define _SELECTIBD_HH_
+#ifndef _CREATEPDF_HH_
+#define _CREATEPDF_HH_
 
 ///////////////////////// STL C/C++ /////////////////////////
 #include <iostream>
@@ -12,9 +12,7 @@
 #include <vector>
 
 /////////////////////////   USER  ///////////////////////////
-#include <HitClass.hh>
-
-// #include "utils.hh"
+#include "HitClass.hh"
 
 double GetTAvg(vector<Hit> vHit){
   TH1D *hdummy = new TH1D("hdummy", "dummy", 1e6, 0., 1e6);
@@ -29,15 +27,17 @@ double GetTAvg(vector<Hit> vHit){
 }
 
 void FillResiduals(TH1D *hResid, vector<Hit> vHit,
-				   TVector3 Origin = TVector3(0.,0.,0.), double TAvg=0,
+				   TVector3 Origin = TVector3(0.,0.,0.),
+				   double SoL = 224.9,
+				   double TAvg = 0.,
 				   bool isWeight=true){
 
   for(auto h: vHit){
     if(isWeight){
-	  hResid->Fill(h.CalculateTResid(Origin) - TAvg,
+	  hResid->Fill(h.CalculateTResid(Origin, SoL) - TAvg,
 				   1/(double)(vHit.size()));
     } else{
-	  hResid->Fill(h.CalculateTResid(Origin) - TAvg);
+	  hResid->Fill(h.CalculateTResid(Origin, SoL) - TAvg);
     }
   }
 
@@ -66,6 +66,10 @@ void ShowUsage(string name){
 	   << "\t-mint-delay\tSet min val for tresid hist (double)\n"
 	   << "\t-maxt-delay\tSet max val for tresid hist (double)\n"
 
+	   << "\t-xx\tSet X for true origin vector (double)\n"
+	   << "\t-yy\tSet X for true origin vector (double)\n"
+	   << "\t-zz\tSet X for true origin vector (double)\n"
+
 	   << "\t-mc\tinput file (ROOT)\n"
 
 	   << endl;
@@ -78,6 +82,7 @@ void ProcessArgs(TApplication *theApp, string *filename,
 				 int *User_nEvts, int *User_iEvt,
 				 int *User_nTResidBins_Prompt, double *User_minTResid_Prompt, double *User_maxTResid_Prompt,
 				 int *User_nTResidBins_Delay, double *User_minTResid_Delay, double *User_maxTResid_Delay,
+				 double *User_xx, double *User_yy, double *User_zz,
 				 bool *User_isBatch) {
 
   // Reading user input parameters
@@ -116,6 +121,12 @@ void ProcessArgs(TApplication *theApp, string *filename,
 	} else if ((arg == "-maxt-delay")) {
 	  *User_maxTResid_Delay = stod(theApp->Argv(++i));
 
+	} else if ((arg == "-xx")) {
+	  *User_xx = stod(theApp->Argv(++i));
+	} else if ((arg == "-yy")) {
+	  *User_yy = stod(theApp->Argv(++i));
+	} else if ((arg == "-zz")) {
+	  *User_zz = stod(theApp->Argv(++i));
 
 	} else if ((arg == "-b")) {
 	  *User_isBatch=true;
@@ -139,4 +150,4 @@ void ProcessArgs(TApplication *theApp, string *filename,
 
 }
 
-#endif //_SELECTIBD_HH_
+#endif //_CREATEPDF_HH_

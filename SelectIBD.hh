@@ -11,18 +11,44 @@
 #include <cmath>
 #include <vector>
 
-/////////////////////////   USER  ///////////////////////////
-#include <HitClass.hh>
+/////////////////////////   BOOST   /////////////////////////
+
+/////////////////////////   ROOT   //////////////////////////
+#include <TVector3.h>
+#include <TSystem.h>
+#include <TGraph.h>
+#include <TH1D.h>
+#include <TH2D.h>
+#include <TStyle.h>
+#include <TColor.h>
+#include <TCanvas.h>
+#include <TFile.h>
+
+/////////////////////////   RAT   ///////////////////////////
+#include <RAT/SimulatedAnnealing.hh>
+
+/////////////////////////   USER   ///////////////////////////
 #include "utils.hh"
+#include "HitClass.hh"
+#include "LL.hh"
+#include "Analyzer.hh"
+#include "HitClass.hh"
+#include "EVFunctions.hh"
+#include "HitFunctions.hh"
+#include "ProgressBar.hpp"
+
+#define SQRT5 2.2360679775
+#define SQRT2 1.41421356237
+
 
 TH1D *GetHPDF(const char *filename, const char *histname) {
+
   TFile *fPDF = new TFile(filename);
   TH1D *hPDF = nullptr;
 
   if(fPDF){
 
 	hPDF = (TH1D *) fPDF->Get(histname)->Clone();
-	// fPDF->Close();
 
   }
 
@@ -30,6 +56,21 @@ TH1D *GetHPDF(const char *filename, const char *histname) {
 
 }
 
+void ScaleSimplexCoord(vector<double> *seed){
+
+  const double scale = 2000. / (2*SQRT2);
+
+  for(auto &s: *seed){
+
+	s *= scale;
+
+  }
+
+}
+
+vector<double> FitAndGetBestPoint(const vector<Hit>& vHit){
+
+}
 
 void ShowUsage(string name){
 
@@ -38,7 +79,11 @@ void ShowUsage(string name){
 
 	   << "\t-h\tShow this help message\n"
 
-	   << "\t-b\tSet batch mode\n"
+	   << "\t-pc\tSet prompt cut (int)\n"
+	   << "\t-DAQT\tSet DAQ Window (int)\n"
+
+	   << "\t-nevts\tNEvts to process (int)\n"
+	   << "\t-ievt\tStart at Evt #i (int)\n"
 
 	   << "\t-minEprompt\tSet min E for prompt window (double)\n"
 	   << "\t-maxEprompt\tSet max E for prompt window (double)\n"
@@ -52,10 +97,18 @@ void ShowUsage(string name){
 	   << "\t-minE-nO\tSet min E for delay window n-O (double)\n"
 	   << "\t-maxE-nO\tSet max E for delay window n-O (double)\n"
 
+	   << "\t-xx\tSet X for true origin vector (double)\n"
+	   << "\t-yy\tSet Y for true origin vector (double)\n"
+	   << "\t-zz\tSet Z for true origin vector (double)\n"
+
+	   << "\t-tt\tSet T for true time (int)\n"
+
 	   << "\t-DR\tSet DR cutoff (double)\n"
 
 	   << "\t-DT\tSet DT cutoff (double)\n"
 
+
+	   << "\t-b\tSet batch mode\n"
 
 	   << "\t-calib\tcalib file (ROOT)\n"
 	   << "\t-mc\tinput file (ROOT)\n"
@@ -68,11 +121,14 @@ void ShowUsage(string name){
 
 void ProcessArgs(TApplication *theApp, string *filename,
 				 int *User_PromptCut,
+				 int *User_DAQWindow,
 				 int *User_nEvts, int *User_iEvt,
 				 double *User_minEPrompt, double *User_maxEPrompt,
 				 double *User_MinEDelayed_nH, double *User_MaxEDelayed_nH,
 				 double *User_MinEDelayed_nC, double *User_MaxEDelayed_nC,
 				 double *User_MinEDelayed_nO, double *User_MaxEDelayed_nO,
+				 double *User_xx, double *User_yy, double *User_zz,
+				 double *User_tt,
 				 double *User_DR,
 				 double *User_DT,
 				 string *User_Calib,
@@ -95,15 +151,18 @@ void ProcessArgs(TApplication *theApp, string *filename,
 	} else if ((arg == "-pc")) {
 	  *User_PromptCut = stoi(theApp->Argv(++i));
 
+	} else if ((arg == "-DAQT")) {
+	  *User_DAQWindow = stoi(theApp->Argv(++i));
+
 	} else if ((arg == "-nevts")) {
 	  *User_nEvts = stoi(theApp->Argv(++i));
 	} else if ((arg == "-ievt")) {
 	  *User_iEvt = stoi(theApp->Argv(++i));
 
 	} else if ((arg == "-minEprompt")) {
-	  *User_minEPrompt = stoi(theApp->Argv(++i));
+	  *User_minEPrompt = stod(theApp->Argv(++i));
 	} else if ((arg == "-minEprompt")) {
-	  *User_minEPrompt = stoi(theApp->Argv(++i));
+	  *User_minEPrompt = stod(theApp->Argv(++i));
 
 	} else if ((arg == "-minE-nH")) {
 	  *User_MinEDelayed_nH = stod(theApp->Argv(++i));
@@ -119,6 +178,16 @@ void ProcessArgs(TApplication *theApp, string *filename,
 	  *User_MinEDelayed_nO = stod(theApp->Argv(++i));
 	} else if ((arg == "-maxE-nO")) {
 	  *User_MaxEDelayed_nO = stod(theApp->Argv(++i));
+
+	} else if ((arg == "-xx")) {
+	  *User_xx = stod(theApp->Argv(++i));
+	} else if ((arg == "-yy")) {
+	  *User_yy = stod(theApp->Argv(++i));
+	} else if ((arg == "-zz")) {
+	  *User_zz = stod(theApp->Argv(++i));
+
+	} else if ((arg == "-tt")) {
+	  *User_tt = stod(theApp->Argv(++i));
 
 	} else if ((arg == "-DR")) {
 	  *User_DR = stod(theApp->Argv(++i));

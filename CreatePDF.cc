@@ -22,20 +22,19 @@
 
 #include <Analyzer.hh>
 #include <HitClass.hh>
-#include <MCFunctions.hh>
+#include <EVFunctions.hh>
 #include <HitFunctions.hh>
 
 #include "ProgressBar.hpp"
 
 using namespace std;
 
-#define DIAMETER = 10857
-#define HEIGHT = 10857
-#define BUFFER = 500
-#define SQRT2 = 1.41421
-#define PRETRIG = (DIAMETER+BUFFER)*SQRT2/C
+#define DIAMETER 10857
+#define HEIGHT 10857
+#define BUFFER 500
+#define SQRT2 1.41421
+#define PRETRIG (DIAMETER+BUFFER)*SQRT2/C
 
-TH1D *GetHPDF(string basic_string);
 int main(int argc, char *argv[]) {
 
   // Get Signal if user wants to interrupt loop
@@ -75,11 +74,16 @@ int main(int argc, char *argv[]) {
   // Select time cut for computing residuals
   auto User_PromptCut = -1;
 
+  double User_xx = -1;
+  double User_yy = -1;
+  double User_zz = -1;
+
   ProcessArgs(&theApp, &inputName,
 			  &User_PromptCut,
 			  &User_nEvts, &User_iEvt,
 			  &User_nTResidBins_Prompt, &User_minTResid_Prompt, &User_maxTResid_Prompt,
 			  &User_nTResidBins_Delay, &User_minTResid_Delay, &User_maxTResid_Delay,
+			  &User_xx, &User_yy, &User_zz,
 			  &User_isBatch);
 
   const bool isBatch = User_isBatch;
@@ -100,7 +104,10 @@ int main(int argc, char *argv[]) {
   const double maxTResid_Delay = SetDefValue(User_maxTResid_Delay, 100.5); // ns
 
   // TODO : Allow user to set true origin vector from input
-  const TVector3 TrueOrigin(0.,0.,0.);
+  const double xx = SetDefValue(User_xx, 0.); // mm
+  const double yy = SetDefValue(User_xx, 0.); // mm
+  const double zz = SetDefValue(User_xx, 0.); // mm
+  const TVector3 TrueOrigin(xx,yy,zz);
 
 
   // #### #### #### #### #### #### #### #### #### #### #### #### //
@@ -151,22 +158,32 @@ int main(int argc, char *argv[]) {
 
 	// Recover Hit vector for 1 evt
 	// vector<Hit> vHit;
-	vector<Hit> vHit = GetHitCollection(FileAnalyzer, iEvt);
+	vector<Hit> vHit = GetEVHitCollection(FileAnalyzer, iEvt);
 
 	// Split vector hit into prompt and delay
-	vector<Hit> vHitDelayed = SplitHitCollection(&vHit, PromptWindow);
+	vector<Hit> vHitDelayed = SplitVHits(&vHit, PromptWindow);
 
-	sort(vHit.begin(), vHit.end());
+	SortVHits(&vHit);
 
-	Hit hCut(TVector3(0, 0, 0),
-			 0,
-			 PromptCut + vHit.begin()->GetT());
-	RemoveHitsAfterCut(vHit, hCut);
+	// Hit hCut(TVector3(0, 0, 0),
+	// 		 0,
+	// 		 PromptCut + vHit.begin()->GetT());
+	// RemoveHitsAfterCut(vHit, hCut);
 
 
-	FillResiduals(hTResiduals, vHit, TVector3(0.,0.,0.), GetTAvg(vHit));
+	FillResiduals(hTResiduals, ResetTVHits(vHit),
+				  TrueOrigin,
+				  224.9,
+				  0,
+				  false);
 
-	FillResiduals(hTResidualsDelayed, vHitDelayed, TVector3(0.,0.,0.), GetTAvg(vHitDelayed));
+	if(vHitDelayed.size()>0){
+	  FillResiduals(hTResidualsDelayed, ResetTVHits(vHitDelayed),
+					TrueOrigin,
+					224.9,
+					0,
+					false);
+	}
 
 	// display the bar
 	progressBar.display();
@@ -187,15 +204,20 @@ int main(int argc, char *argv[]) {
 	hTResiduals->Scale(1/(double)(nEvtToProcess));
 	hTResiduals->Draw();
 
-	c1 = new TCanvas("cTResidDelay", "cTResidDelay", 800,600);
-	c1->SetGrid();
-	hTResidualsDelayed->Scale(1/(double)(nEvtToProcess));
-	hTResidualsDelayed->Draw();
+	if(hTResidualsDelayed->GetEntries()>0){
+	  c1 = new TCanvas("cTResidDelay", "cTResidDelay", 800,600);
+	  c1->SetGrid();
+	  hTResidualsDelayed->Scale(1/(double)(nEvtToProcess));
+	  hTResidualsDelayed->Draw();
+	}
+
   }
 
   foutput->cd();
   hTResiduals->Write();
-  hTResidualsDelayed->Write();
+  if(hTResidualsDelayed->GetEntries()>0) {
+	hTResidualsDelayed->Write();
+  }
   foutput->Close();
 
   /////////////////////////

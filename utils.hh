@@ -22,14 +22,14 @@
 
 using namespace std;
 
-string ExtractFilenameFromPath(string pathname){
+static string ExtractFilenameFromPath(string pathname){
 
   boost::filesystem::path p(pathname);
   return p.filename().string();
 
 }
 
-vector<double> CorrectBinRangeArray(vector<double> inputArray){
+static vector<double> CorrectBinRangeArray(vector<double> inputArray){
 
   vector<double> output;
   output.resize(inputArray.size()+1);
@@ -54,15 +54,14 @@ vector<double> CorrectBinRangeArray(vector<double> inputArray){
 
 int EoF = 0;
 
-void Interrupt(int arg){
+static void Interrupt(int arg){
 
   if(EoF==0) { printf("got a control-C, stop\n"); EoF=1; return; }
   else { printf("got a control-C, exiting\n"); exit(0); }
 
 }
 
-
-void SetStyleVariables(TStyle *t2kStyle){
+static void SetStyleVariables(TStyle *t2kStyle){
 
   t2kStyle->SetFrameBorderMode(0);
   t2kStyle->SetCanvasBorderMode(0);
@@ -129,7 +128,7 @@ void SetStyleVariables(TStyle *t2kStyle){
 
 }
 
-void SetBasicStyle(){
+static void SetBasicStyle(){
   gROOT->SetStyle("Plain");
 
   gStyle->SetOptStat(0); // This determines if you want a stats box
@@ -145,7 +144,7 @@ void SetBasicStyle(){
   gStyle->SetPalette(kDarkRainBow);
 }
 
-void SetBasicTH1Style(TH1 *h,
+static void SetBasicTH1Style(TH1 *h,
 					  int Color=kBlue-4,
 					  int LineWidth=1, int LineStyle=1,
 					  int MarkerSize=1, int MarkerStyle=kPlus){
@@ -160,7 +159,7 @@ void SetBasicTH1Style(TH1 *h,
 
 }
 
-bool IsFileExist(const string& name) {
+static bool IsFileExist(const string& name) {
   struct stat buffer;
   return (stat (name.c_str(), &buffer) == 0);
 }
@@ -171,7 +170,7 @@ T SetDefValue(const T& User, const T& def){
 }
 
 // define a function with 3 parameters
-Double_t fitGaus(Double_t *x,Double_t *par) {
+static Double_t fitGaus(Double_t *x,Double_t *par) {
 
   Double_t arg = 0;
   if (par[2]!=0) arg = (x[0] - par[1])/par[2];
@@ -181,7 +180,7 @@ Double_t fitGaus(Double_t *x,Double_t *par) {
 }
 
 // define a function with 3 parameters
-Double_t fitExpo(Double_t *x,Double_t *par) {
+static Double_t fitExpo(Double_t *x,Double_t *par) {
 
   return par[0]*TMath::Exp(-x[0]/par[1]);
 

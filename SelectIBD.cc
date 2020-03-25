@@ -21,23 +21,16 @@
 #include "SelectIBD.hh"
 
 #include "Analyzer.hh"
+#include "EVFunctions.hh"
+#include "FitPosTimeSimulatedAnnealing.hh"
 #include "HitClass.hh"
-#include "MCFunctions.hh"
 #include "HitFunctions.hh"
-#include "FitPosTime.hh"
 #include "CalibFunctions.hh"
 
 #include "ProgressBar.hpp"
 
 using namespace std;
 
-#define DIAMETER = 10857
-#define HEIGHT = 10857
-#define BUFFER = 500
-#define SQRT2 = 1.41421
-#define PRETRIG = (DIAMETER+BUFFER)*SQRT2/C
-
-TH1D *GetHPDF(string basic_string);
 int main(int argc, char *argv[]) {
 
   // Get Signal if user wants to interrupt loop
@@ -72,6 +65,15 @@ int main(int argc, char *argv[]) {
   // Select time cut for computing residuals
   auto User_PromptCut = -1;
 
+  // Add DAQ window if RAT hasn't created 2evts
+  auto User_DAQWindow = -1;
+
+  auto User_xx = -1.;
+  auto User_yy = -1.;
+  auto User_zz = -1.;
+
+  auto User_tt = -1.;
+
   // Select Prompt event in E range
   auto User_MinEPrompt = -1.; auto User_MaxEPrompt = -1.;
 
@@ -96,11 +98,14 @@ int main(int argc, char *argv[]) {
 
   ProcessArgs(&theApp, &inputName,
 			  &User_PromptCut,
+			  &User_DAQWindow,
 			  &User_nEvts, &User_iEvt,
 			  &User_MinEPrompt, &User_MaxEPrompt,
 			  &User_MinEDelayed_nH, &User_MaxEDelayed_nH,
 			  &User_MinEDelayed_nC, &User_MaxEDelayed_nC,
 			  &User_MinEDelayed_nO, &User_MaxEDelayed_nO,
+			  &User_xx, &User_yy, &User_zz,
+			  &User_tt,
 			  &User_DR,
 			  &User_DT,
 			  &User_Calib,
@@ -112,13 +117,48 @@ int main(int argc, char *argv[]) {
   // Add a prompt window, because there's no separate trigger for 2 evts in rat-pac.
   // The IBD generator will not create 2 separate EV object.
   // Therefore, add a cut to physically separate prompt+delay
-  const double PromptWindow = 200.; // ns
+  const double DAQWindow = SetDefValue(User_DAQWindow, 256); // ns
 
-  const double MinEPrompt = SetDefValue(User_MinEPrompt, 0.);
-  const double MaxEPrompt = SetDefValue(User_MaxEPrompt, 1000.);
+  const double MinEPrompt = SetDefValue(User_MinEPrompt, 1.); // MeV
+  const double MaxEPrompt = SetDefValue(User_MaxEPrompt, 10.); // MeV
+
+  const double MinEDelayed_nH = SetDefValue(User_MinEDelayed_nH, 1.); // MeV
+  const double MaxEDelayed_nH = SetDefValue(User_MaxEDelayed_nH, 10.); // MeV
+
+  const double MinEDelayed_nC = SetDefValue(User_MinEDelayed_nC, 1.); // MeV
+  const double MaxEDelayed_nC = SetDefValue(User_MaxEDelayed_nC, 10.); // MeV
+
+  const double MinEDelayed_nO = SetDefValue(User_MinEDelayed_nO, 1.); // MeV
+  const double MaxEDelayed_nO = SetDefValue(User_MaxEDelayed_nO, 10.); // MeV
 
   // TODO : Allow user to set true origin vector from input
-  const TVector3 TrueOrigin(0.,0.,0.);
+  const double xx = SetDefValue(User_xx, 0.); // mm
+  const double yy = SetDefValue(User_xx, 0.); // mm
+  const double zz = SetDefValue(User_xx, 0.); // mm
+  const TVector3 TrueOrigin(xx,yy,zz);
+
+  const double TrueTime = SetDefValue(User_tt, 0.); //ns
+
+  const double DR = SetDefValue(User_DR, 1000.); // mm
+  const double DT = SetDefValue(User_DT, 1.e6); // ns
+
+
+  // #### #### #### #### #### #### #### #### #### #### #### #### //
+  // ####                SET CALIBRATION                    #### //
+  // #### #### #### #### #### #### #### #### #### #### #### #### //
+
+  if(!User_Calib.empty())
+	MCCalib Cal(User_Calib);
+
+
+  // #### #### #### #### #### #### #### #### #### #### #### #### //
+  // ####                LOAD  PDF                          #### //
+  // #### #### #### #### #### #### #### #### #### #### #### #### //
+
+  TH1D *hPDF = GetHPDF(User_fPDF.c_str(), "hTResiduals");
+  if(hPDF){
+	cout << "PDF loaded" << endl;
+  }
 
 
   // #### #### #### #### #### #### #### #### #### #### #### #### //
@@ -137,30 +177,16 @@ int main(int argc, char *argv[]) {
   hTGuess = new TH1D("hTGuess", "T Reconstruction",
 					 201, -100.5, 100.5);
 
+
+  TH1D *hEPrompt = new TH1D("hEPrompt", "E_{Rec} Prompt",
+							101, -0.05, 10.05);
+
+
   // #### #### #### #### #### #### #### #### #### #### #### #### //
   // ####                CREATE OUTPUTS                     #### //
   // #### #### #### #### #### #### #### #### #### #### #### #### //
 
   auto *foutput = new TFile("dummy.root", "RECREATE");
-
-
-  // #### #### #### #### #### #### #### #### #### #### #### #### //
-  // ####                LOAD  PDF                          #### //
-  // #### #### #### #### #### #### #### #### #### #### #### #### //
-
-  TH1D *hPDF = GetHPDF(User_fPDF.c_str(), "hTResiduals");
-  if(hPDF){
-    cout << "PDF loaded" << endl;
-  }
-
-  // #### #### #### #### #### #### #### #### #### #### #### #### //
-  // ####                SET CALIBRATION                    #### //
-  // #### #### #### #### #### #### #### #### #### #### #### #### //
-
-  MCCalib Cal(User_Calib);
-
-  TH1D *hEPrompt = new TH1D("hEPrompt", "E_{Rec} Prompt",
-							21, -0.5, 10.5);
 
 
   // #### #### #### #### #### #### #### #### #### #### #### #### //
@@ -187,43 +213,73 @@ int main(int argc, char *argv[]) {
 
 	// Recover Hit vector for 1 evt
 	// vector<Hit> vHit;
-	vector<Hit> vHit = GetHitCollection(FileAnalyzer, iEvt);
+	vector<Hit> vHit = GetEVHitCollection(FileAnalyzer, iEvt, 0);
 
 	// Split vector hit into prompt and delay
-	vector<Hit> vHitDelayed = SplitHitCollection(&vHit, 200);
+	vector<Hit> vHitDelayed = SplitVHits(&vHit, 200);
 
-	// Get E evts
-	double NPE=-1; double NHits=-1; double E=-1;
-	if(!User_Calib.empty()){
-
-	  GetNPEAndNHitsFromHits(vHit, &NPE, &NHits);
-	  E = ComputeECalib(Cal, NPE, NHits);
-
-	}
-
-	if(E>0){
-
-	  if(E>MinEPrompt && E<MaxEPrompt){
-
-		hEPrompt->Fill(E);
-
-	  }
-
-	}
+	// // Get E evts
+	// double NPE=-1; double NHits=-1; double E=-1;
+	// if(!User_Calib.empty()){
+	//
+	//   GetNPEAndNHitsFromHits(vHit, &NPE, &NHits);
+	//   E = ComputeECalib(Cal, NPE, NHits);
+	//
+	// }
+	//
+	// if(E>0){
+	//
+	//   if(E>MinEPrompt && E<MaxEPrompt){
+	//
+	// 	hEPrompt->Fill(E);
+	//
+	//   }
+	//
+	// }
 
 	// Fit position time both events
 	if(vHit.size()>0){
 
 	  if(hPDF){
-		FitPosTime FPT_Prompt(TrueOrigin, 0, vHit, hPDF);
+		SortVHits(&vHit);
+		auto *FT = new FitTheia(hPDF, TrueOrigin, TrueTime, vHit);
+
+		const size_t dim = 4;
+		RAT::SimulatedAnnealing<4> anneal(FT);
+		vector<double> point(dim), seed(dim);
+
+		// Regular simplex in 4D
+		// https://en.wikipedia.org/wiki/5-cell
+
+		seed[0] = 1; seed[1] = 1; seed[2] = 1; seed[3] = -1/SQRT5;
+		ScaleSimplexCoord(&seed);
+		anneal.SetSimplexPoint(0,seed);
+		seed[0] = 1; seed[1] = -1; seed[2] = -1; seed[3] = -1/SQRT5;
+		ScaleSimplexCoord(&seed);
+		anneal.SetSimplexPoint(1,seed);
+		seed[0] = -1; seed[1] = 1; seed[2] = -1; seed[3] = -1/SQRT5;
+		ScaleSimplexCoord(&seed);
+		anneal.SetSimplexPoint(2,seed);
+		seed[0] = -1; seed[1] = -1; seed[2] = 1; seed[3] = -1/SQRT5;
+		ScaleSimplexCoord(&seed);
+		anneal.SetSimplexPoint(3,seed);
+		seed[0] = 0; seed[1] = 0; seed[2] = 0; seed[3] = SQRT5 - 1/SQRT5;
+		ScaleSimplexCoord(&seed);
+		anneal.SetSimplexPoint(4,seed);
+
+		anneal.Anneal(10,150,50,4.0); // Minimize
+
+		anneal.GetBestPoint(point);
 
 		for(int iPos = 0; iPos<3; iPos++) {
 
-		  hPosGuess[iPos]->Fill(FPT_Prompt.GetPos()(iPos));
+		  hPosGuess[iPos]->Fill(point[iPos]);
 
 		}
 
-		hTGuess->Fill(FPT_Prompt.GetT());
+		hTGuess->Fill(point[3]);
+
+		delete FT;
 
 	  }
 
