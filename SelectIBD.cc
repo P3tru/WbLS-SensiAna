@@ -186,7 +186,8 @@ int main(int argc, char *argv[]) {
   // ####                CREATE OUTPUTS                     #### //
   // #### #### #### #### #### #### #### #### #### #### #### #### //
 
-  auto *foutput = new TFile("dummy.root", "RECREATE");
+  auto *foutput = new TFile(Form("%s_RECON.root",inputName.c_str()),
+							"RECREATE");
 
 
   // #### #### #### #### #### #### #### #### #### #### #### #### //
@@ -312,7 +313,11 @@ int main(int argc, char *argv[]) {
   c1->SetGrid();
   hEPrompt->Draw();
 
-  foutput->cd(); c1->Write();
+  foutput->cd();
+  for(auto h:hPosGuess){
+	h->Write();
+  }
+  hTGuess->Write();
   foutput->Close();
 
 
