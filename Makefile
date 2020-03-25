@@ -22,8 +22,8 @@ ROOTLIBS   := $(shell root-config --libs)
 RATLIBS  := -L$(RATROOT)/lib -lRATEvent
 
 ### BOOST
-BOOSTCFLAGS := -I/usr/include/boost/
-BOOSTLIBS   := -lboost_system -lboost_filesystem
+BOOSTCFLAGS := -I/data/snoplus/home/zsoldos/.local/boost-1.71.0
+BOOSTLIBS   := -L/data/snoplus/home/zsoldos/.local/boost-1.71.0/lib -lboost_system -lboost_filesystem
 
 CPPFLAGS  += -I$(ROOTSYS)/include -I$(INCDIR) $(ROOTCFLAGS) -I$(RATROOT)/include
 CPPFLAGS  +=  $(BOOSTCFLAGS)
