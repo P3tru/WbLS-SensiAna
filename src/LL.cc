@@ -1,11 +1,19 @@
+///////////////////////// STL C/C++ /////////////////////////
+
+/////////////////////////   BOOST   /////////////////////////
+
+/////////////////////////   ROOT   //////////////////////////
 #include <TMath.h>
 
-#include <LL.hh>
+/////////////////////////   RAT   ///////////////////////////
 
-double EvalL(double Nobs, double Npred){
+/////////////////////////   USER   ///////////////////////////
+#include "LL.hh"
+
+double EvalNLL(double Nobs, double Npred){
   double L;
   if(Nobs>0 && Npred>0)
-	L=Npred-Nobs+Nobs*TMath::Log(Nobs/Npred);
+	L=Nobs*TMath::Log(Nobs/Npred) + Npred-Nobs;
   else
 	L=Npred;
   L = -L;

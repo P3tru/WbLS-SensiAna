@@ -5,6 +5,9 @@
 #ifndef _LL_HH_
 #define _LL_HH_
 
-double EvalL(double Nobs, double Npred);
+// Evaluate Negative log-likelihood
+// Add special warning to deal with log(0) issues:
+// in that case, NLL = -NPred
+double EvalNLL(double Nobs, double Npred);
 
 #endif

@@ -1,9 +1,16 @@
-#include <vector>
+//
+// Created by zsoldos on 2/21/20.
+//
+
+///////////////////////// STL C/C++ /////////////////////////
+
+/////////////////////////   RAT   ///////////////////////////
+
+/////////////////////////   ROOT  ///////////////////////////
+#include <TGraph.h>
 
 /////////////////////////   USER  ///////////////////////////
 #include <MCFunctions.hh>
-#include <TGraph.h>
-#include <TH2D.h>
 
 using namespace std;
 
@@ -17,8 +24,7 @@ RAT::DS::MC * GetRATMCOnEvt(Analyzer *fAnalyzer, unsigned int iEvt){
 
 }
 
-
-vector<Hit> GetHitCollection(Analyzer *fAnalyzer, unsigned int iEvt){
+vector<Hit> GetMCHitCollection(Analyzer *fAnalyzer, unsigned int iEvt){
 
 
   RAT::DS::MC * mc = GetRATMCOnEvt(fAnalyzer, iEvt);
@@ -51,62 +57,6 @@ vector<Hit> GetHitCollection(Analyzer *fAnalyzer, unsigned int iEvt){
   } // END FOR iPMT
 
   return vHit;
-
-}
-
-vector<Hit> SplitHitCollection(vector<Hit> *vHit, double PromptWindow){
-
-  vector<Hit> Empty;
-
-  unsigned int SizeInit = vHit->size();
-
-  if(vHit->size() == 0){
-
-	return Empty;
-
-  } else if ( vHit->size() > 0 ){
-
-	sort(vHit->begin(), vHit->end());
-	for(unsigned int iHit=0; iHit<vHit->size()-1; iHit++){
-
-	  const double dT = vHit->at(iHit+1).GetT() - vHit->at(iHit).GetT();
-
-	  if(dT>PromptWindow){
-
-		if(vHit->begin() + iHit + 1 < vHit->end()){
-
-		  try {
-
-			vector<Hit> vHitDelayed(vHit->begin() + iHit + 1, vHit->end());
-
-			vHit->erase(vHit->begin() + iHit + 1, vHit->end());
-
-			return vHitDelayed;
-
-		  } catch (vector<Hit> const *vHit){
-
-			for(auto h : *vHit)
-			  h.Print();
-
-			return Empty;
-
-		  }
-
-
-		} else if (vHit->begin() + iHit + 1 >= vHit->end()){
-
-		  return Empty;
-
-		}
-	  }
-
-	}
-
-  }
-
-  if(vHit->size() == SizeInit){
-	return Empty;
-  }
 
 }
 

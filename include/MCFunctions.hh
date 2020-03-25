@@ -7,26 +7,28 @@
 
 
 ///////////////////////// STL C/C++ /////////////////////////
-#include <iostream>
-#include <string>
-#include <cmath>
 #include <vector>
 
 /////////////////////////   RAT   ///////////////////////////
-#include <RAT/DS/Run.hh>
-#include <RAT/DS/Root.hh>
+#include <RAT/DS/MC.hh>
 
 /////////////////////////   ROOT  ///////////////////////////
 #include <TH2D.h>
 
+/////////////////////////   USER  ///////////////////////////
 #include "Analyzer.hh"
 #include "HitClass.hh"
 
 using namespace std;
 
+// Access the MC object from RAT
+// at iEvt (from MCTree)
 RAT::DS::MC * GetRATMCOnEvt(Analyzer *fAnalyzer, unsigned int iEvt=0);
-vector<Hit> GetHitCollection(Analyzer *fAnalyzer, unsigned int iEvt=0);
-vector<Hit> SplitHitCollection(vector<Hit> *vHit, double PromptWindow);
+
+// Fill vector<Hit> with MC Info
+vector<Hit> GetMCHitCollection(Analyzer *fAnalyzer, unsigned int iEvt=0);
+
+
 void FillBirksLaw(Analyzer *fAnalyzer, unsigned int iEvt, TH2D *h2D= nullptr);
 
 class TPhoton{

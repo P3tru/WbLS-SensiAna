@@ -64,8 +64,8 @@ class Hit {
   double CalculateDistance(const TVector3& Origin = TVector3(0,0,0)){
 	return TVector3(Pos-Origin).Mag();
   };
-  double CalculateTResid(const TVector3& Origin = TVector3(0,0,0), double SoL = C){
-	return T - (TVector3(Pos-Origin).Mag())/SoL;
+  double CalculateTResid(const TVector3& Origin = TVector3(0,0,0), double SoL = 299.792458){
+	return T - CalculateDistance(Origin)/SoL;
   };
 
   bool operator==(const Hit &rhs) const {
