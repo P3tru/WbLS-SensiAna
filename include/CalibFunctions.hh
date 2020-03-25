@@ -19,6 +19,7 @@
 #include <TH1D.h>
 #include <TGraphErrors.h>
 #include <TF1.h>
+#include <TClass.h>
 
 using namespace std;
 
@@ -125,11 +126,11 @@ class MCCalib{
 	  grSigHits = CreateGraph(&vSigHits);
 	}
 
-	grMuPE->SetBit(TGraph::kIsSortedX);
-	grSigPE->SetBit(TGraph::kIsSortedX);
+	// grMuPE->SetBit(TGraph::kIsSortedX);
+	// grSigPE->SetBit(TGraph::kIsSortedX);
 
-	grMuHits->SetBit(TGraph::kIsSortedX);
-	grSigHits->SetBit(TGraph::kIsSortedX);
+	// grMuHits->SetBit(TGraph::kIsSortedX);
+	// grSigHits->SetBit(TGraph::kIsSortedX);
 
 	if(vMuPE.size()>0 && vMuHits.size()>0){
 
