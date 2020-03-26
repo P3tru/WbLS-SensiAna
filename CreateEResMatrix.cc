@@ -161,7 +161,8 @@ int main(int argc, char *argv[]) {
 	file.SetHist(hNbPEVSHits);
 
 //	file.DoAnalysis(CollectPEAndHits);
-	file.DoAnalysis(CollectPromptPEAndHits);
+// 	file.DoAnalysis(CollectPromptPEAndHits);
+	file.DoAnalysisEV(CollectEVPEAndHits);
 
 	//////////////////////////////////////
 	// Recover hNPE/hNHits projection   //
