@@ -29,12 +29,6 @@
 
 using namespace std;
 
-#define DIAMETER 10857
-#define HEIGHT 10857
-#define BUFFER 500
-#define SQRT2 1.41421
-#define PRETRIG (DIAMETER+BUFFER)*SQRT2/C
-
 int main(int argc, char *argv[]) {
 
   // Get Signal if user wants to interrupt loop
