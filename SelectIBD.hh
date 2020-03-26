@@ -131,6 +131,8 @@ void ProcessArgs(TApplication *theApp, string *filename,
 				 double *User_tt,
 				 double *User_DR,
 				 double *User_DT,
+				 double *User_E,
+				 double *User_ManCalib,
 				 string *User_Calib,
 				 bool *User_isBatch,
 				 string *User_fPDF) {
@@ -193,6 +195,12 @@ void ProcessArgs(TApplication *theApp, string *filename,
 	  *User_DR = stod(theApp->Argv(++i));
 	} else if ((arg == "-DT")) {
 	  *User_DT = stod(theApp->Argv(++i));
+
+	} else if ((arg == "-E")) {
+	  *User_E = stod(theApp->Argv(++i));
+
+	} else if ((arg == "-mcalib")) {
+	  *User_ManCalib = stod(theApp->Argv(++i));
 
 	} else if ((arg == "-b")) {
 	  *User_isBatch=true;

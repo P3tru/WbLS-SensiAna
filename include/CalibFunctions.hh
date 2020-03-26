@@ -59,6 +59,8 @@ class MCCalib{
 
  public:
 
+  MCCalib() = default;
+
   explicit MCCalib(string filename) : filename(filename) {
 
 	auto *FileCalib = TFile::Open(filename.c_str());
