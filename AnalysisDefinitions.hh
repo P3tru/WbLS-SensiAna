@@ -41,6 +41,16 @@ void CollectPEAndHits(RAT::DS::MC *mc, TH2D *Hist){
 
 }
 
+void CollectEVPEAndHits(RAT::DS::EV *ev, TH2D *Hist){
+
+  const double nbPE = ev->GetTotalCharge();
+  const double nHits = ev->Nhits();
+
+  if(Hist)
+	Hist->Fill(nbPE, nHits);
+
+}
+
 void CollectPromptPEAndHits(RAT::DS::MC *mc, TH2D *Hist){
 
   // Define container for PMT Hit Times

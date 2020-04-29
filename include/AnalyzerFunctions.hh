@@ -5,11 +5,28 @@
 #ifndef _ANALYZERFUNCTIONS_HH_
 #define _ANALYZERFUNCTIONS_HH_
 
-#include <Analyzer.hh>
+///////////////////////// STL C/C++ /////////////////////////
+#include <string>
+#include <vector>
 
-#include <TH1D.h>
+/////////////////////////   ROOT   //////////////////////////
 
-// PROTOTYPES FOR ANALYZER FUNCTIONS
-void GetHitTime(Analyzer *Ana, unsigned int iEvt = 0, TH1D* hHitTime = nullptr);
+/////////////////////////   USER   //////////////////////////
+#include "Analyzer.hh"
+#include "FlatParticle.hh"
+
+using namespace std;
+
+// Add list of analyzer to vector
+void AddFAnalyzers(vector<Analyzer*> *vFAnalyzer, const string& inputName, const string& listName = "");
+
+// Dump vector<Hit> inside a npz file
+void GetVHitAndDumpFlatNPZ(Analyzer *fAnalyzer, unsigned iEvt, const string& NPZName, const string& mode="a");
+
+// Get primary particle info from
+FlatParticle GetPrimaryParticleInfo(Analyzer *fAnalyzer, unsigned int iEvt);
+
+// Plot quenching spectrum
+void PlotQuenchingSpectrum(Analyzer *fAnalyzer);
 
 #endif

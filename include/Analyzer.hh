@@ -14,6 +14,7 @@
 #include <RAT/DS/Run.hh>
 #include <RAT/DS/Root.hh>
 
+using namespace std;
 
 class Analyzer {
 
@@ -25,35 +26,57 @@ class Analyzer {
   RAT::DS::Run *run;
   TTree *runTree;
 
-  unsigned long int nEvts;
+  unsigned long nEvts;
+
+  string tag;
 
  public:
-  explicit Analyzer(TFile *f_mc= nullptr, TTree *tree_mc= nullptr, RAT::DS::Root *rds= nullptr,
-					unsigned long n_evts=0)
-	  : fMC(f_mc), treeMC(tree_mc), rds(rds), nEvts(n_evts) {
+  Analyzer() = default;
+
+  Analyzer(TFile *f_mc,
+		   TTree *tree_mc,
+		   RAT::DS::Root *rds,
+		   RAT::DS::Run *run,
+		   TTree *run_tree,
+		   unsigned long n_evts,
+		   const string &tag)
+	  : fMC(f_mc), treeMC(tree_mc), rds(rds), run(run), runTree(run_tree), nEvts(n_evts), tag(tag) {
 
   }
-  explicit Analyzer(const char* filename){
-	fMC = new TFile(filename);
 
-	if (fMC->IsOpen()) {
+  explicit Analyzer(const char* filename, const string &tag=""){
+
+	if(tag.empty())
+	  Analyzer::tag.clear();
+	else
+	  Analyzer::tag = tag;
+
+	SetAnalyzer(filename);
+
+  }
+
+  void SetAnalyzer(const char *filename){
+
+	Analyzer::fMC = new TFile(filename);
+
+	if (Analyzer::fMC->IsOpen()) {
 
 	  ////////////////////////////////
 	  // IF file is open do stuff ////
 	  ////////////////////////////////
 
-	  run = new RAT::DS::Run();
+	  Analyzer::run = new RAT::DS::Run();
 
-	  runTree = (TTree *) fMC->Get("runT");
-	  runTree->SetBranchAddress("run", &run);
-	  runTree->GetEntry(0);
+	  Analyzer::runTree = (TTree *) Analyzer::fMC->Get("runT");
+	  Analyzer::runTree->SetBranchAddress("run", &run);
+	  Analyzer::runTree->GetEntry(0);
 
-	  treeMC = (TTree *) fMC->Get("T");
+	  Analyzer::treeMC = (TTree *) Analyzer::fMC->Get("T");
 
-	  rds = new RAT::DS::Root();
-	  treeMC->SetBranchAddress("ds", &rds);
+	  Analyzer::rds = new RAT::DS::Root();
+	  Analyzer::treeMC->SetBranchAddress("ds", &rds);
 
-	  nEvts = treeMC->GetEntries();
+	  Analyzer::nEvts = Analyzer::treeMC->GetEntries();
 
 	}
 
@@ -90,6 +113,13 @@ class Analyzer {
   }
   TTree *GetRunTree() const {
 	return runTree;
+  }
+
+  const string &GetTag() const {
+	return tag;
+  }
+  void SetTag(const string &tag) {
+	Analyzer::tag = tag;
   }
 
 };

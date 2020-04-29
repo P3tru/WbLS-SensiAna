@@ -26,7 +26,7 @@
 #include <TRandom3.h>
 
 /////////////////////////   USER   //////////////////////////
-#include "../ProgressBar.hpp"
+#include "ProgressBar.hpp"
 
 using namespace std;
 
@@ -149,6 +149,78 @@ class TFileAnalysis {
 
 
   };
+
+  // #### #### #### #### #### #### #### #### #### //
+  // #### ####     DO ANALYSIS          #### #### //
+  // #### #### #### #### #### #### #### #### #### //
+
+  void DoAnalysisEV(void (*func)(RAT::DS::EV *ev, T *Hist)){
+
+	auto *f = new TFile(filename.c_str());
+
+	if(f->IsOpen()){
+
+	  ////////////////////////////////
+	  // IF file is open do stuff ////
+	  ////////////////////////////////
+
+	  auto *tree = (TTree*) f->Get("T");
+
+	  auto *rds = new RAT::DS::Root();
+	  tree->SetBranchAddress("ds", &rds);
+
+	  int nEvents = tree->GetEntries();
+
+	  nbEntries = nEvents;
+
+	  ProgressBar progressBar(nEvents, 70);
+
+	  for (int iEvt = 0; iEvt < nEvents; iEvt++) {
+		tree->GetEntry(iEvt);
+
+		// record the tick
+		++progressBar;
+
+		// Access RAT MC info and the summary
+		RAT::DS::EV *ev = rds->GetEV(0);
+
+		// #### #### #### #### //
+		// Here we can now insert function which takes mc in input
+		// and then extract information and fill an histogram.
+
+		if(func){
+		  func(ev,Hist);
+		} else {
+		  cout << "NO ANALYSIS PROVIDED" << endl;
+		  exit(EXIT_FAILURE);
+		}
+
+		// display the bar
+		progressBar.display();
+
+	  } // END FOR iEvt
+
+	  // Prevent memory leaks
+	  // From file
+	  f->Close();
+
+	  // From TTree
+	  delete rds;
+
+	  delete f;
+
+	} else {
+
+	  ////////////////////////////////////////////////////
+	  // Warn user if there's a problem with the file ////
+	  ////////////////////////////////////////////////////
+
+	  boost::filesystem::path p(filename);
+	  cout << "FILE " << p.string() << " not open. Skip..." << endl;
+	}
+
+
+  }
 
   // #### #### #### #### #### #### #### #### #### //
   // #### ####        PMTs INFO         #### #### //

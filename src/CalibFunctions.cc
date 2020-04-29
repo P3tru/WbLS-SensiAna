@@ -14,13 +14,17 @@ static double GenEBin(){
 
 }
 
-double ComputeECalib(const MCCalib& CalibObj, double NPE, double NHits){
+double ComputeECalib(const MCCalib& CalibObj, double NPE, double NHits, TGraph *grL){
 
   if( NPE>CalibObj.GetMaxPe() || NHits>CalibObj.GetMaxHits() ){
     return -1.;
   }
 
-  auto *grL = new TGraph();
+  if(!grL)
+    grL = new TGraph();
+
+  auto MaxL = DBL_MIN;
+  auto MaxE = DBL_MIN;
 
   for(auto EBin: CalibObj.GetEBins()){
 
@@ -36,18 +40,13 @@ double ComputeECalib(const MCCalib& CalibObj, double NPE, double NHits){
 	double Likelihood = TMath::Gaus(NPE, muPE, sigPE)*TMath::Gaus(NHits, muHits, sigHits);
 	grL->SetPoint(grL->GetN(), EBin, Likelihood);
 
+	if(Likelihood>MaxL){
+	  MaxL = Likelihood;
+	  MaxE = EBin;
+	}
+
   }
 
-  TF1 *fFit;
-  grL->Fit("gaus", "Q0");
-  fFit = grL->GetFunction("gaus");
-  double mean = fFit->GetParameter(1);
-  double meanErr = fFit->GetParError(1);
-  double sig = fFit->GetParameter(2);
-  double sigErr = fFit->GetParError(2);
-
-  // cout << "ERec: " << mean << " +- " << sig << " MeV " << endl;
-
-  return mean;
+  return MaxE;
 
 }

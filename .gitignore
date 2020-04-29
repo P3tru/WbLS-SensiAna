@@ -10,13 +10,16 @@ VtxRecon
 SelectIBD
 CreatePDF
 PECounting
+FlattenHits
 
 # Inputs
 *.txt
+*.root
 
 # Outputs
 *.jpg
 *.png
+*.pdf
 
 # Perso
 Blackhole.C

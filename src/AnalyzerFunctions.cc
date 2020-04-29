@@ -1,40 +1,89 @@
+///////////////////////// STL C/C++ /////////////////////////
+#include <string>
+#include <vector>
+#include <fstream>
+
 /////////////////////////   ROOT   //////////////////////////
-#include <TVector3.h>
 
 /////////////////////////   USER  ///////////////////////////
-#include <AnalyzerFunctions.hh>
+#include "AnalyzerFunctions.hh"
+#include "HitClass.hh"
+#include "HitFunctions.hh"
+#include "EVFunctions.hh"
+#include "MCFunctions.hh"
 
-void GetHitTime(Analyzer *Ana, unsigned int iEvt, TH1D* hHitTime){
+#include "cnpy.h"
 
-  Ana->GetTreeMc()->GetEntry(iEvt);
-  auto *mc = Ana->GetRds()->GetMC();
+void AddFAnalyzers(vector<Analyzer*> *vFAnalyzer, const string& inputName, const string& listName){
 
-  auto NbPMTsHits = mc->GetMCPMTCount();
+  if(!inputName.empty()){
+	vFAnalyzer->push_back(new Analyzer(inputName.c_str()));
+  }
 
-  for (int iPMT = 0; iPMT < NbPMTsHits; iPMT++) {
+  if(!listName.empty()) {
 
-	auto mcPMT = mc->GetMCPMT(iPMT);
-	auto PMTID = mcPMT->GetID();
-	auto PMTPos = Ana->GetRun()->GetPMTInfo()->GetPosition(PMTID);
+	// Get ready to read inside inputName
+	// each file name
+	string line;
+	ifstream file(listName);
 
-	auto NbPhotonCounts = mcPMT->GetMCPhotonCount();
+	while (getline(file, line)) {
 
-	for (int iP = 0; iP < NbPhotonCounts; iP++) {
+	  if (line.compare(0, 1, "#") == 0) {
 
-	  auto mcPhoton = mcPMT->GetMCPhoton(iP);
-	  // Get Q and T
-	  auto Q = mcPhoton->GetCharge();
-	  auto T = mcPhoton->GetHitTime();
+		continue;
 
-	  // ########## //
-	  // FILL EVENT //
-	  // ########## //
+	  } else {
 
-	  if(hHitTime)
-		hHitTime->Fill(T);
+		vFAnalyzer->push_back(new Analyzer(line.c_str()));
+
+	  }
 
 	}
 
-  } // END FOR iPMT
+  }
+
+
+}
+
+void GetVHitAndDumpFlatNPZ(Analyzer *fAnalyzer, unsigned iEvt, const string& NPZName, const string& mode){
+
+  vector<Hit> vHit = GetMCHitCollection(fAnalyzer, iEvt, true);
+
+  const auto NHits = vHit.size();
+  vector<double> vNPY = FlatenVHit(vHit);
+
+  cnpy::npz_save(NPZName,
+				 Form("Evt%d", iEvt),
+				 &vNPY[0],
+				 {NHits, 5}, // NHits vector of 5 dimension {X, Y, Z, T, Source}
+				 mode);
+
+}
+
+FlatParticle GetPrimaryParticleInfo(Analyzer *fAnalyzer, unsigned int iEvt){
+
+  RAT::DS::MC * mc = GetRATMCOnEvt(fAnalyzer, iEvt);
+  RAT::DS::MCParticle *prim = mc->GetMCParticle(0);
+
+  return FlatParticle(prim->GetParticleName(), prim->GetPosition(), prim->GetMomentum().Unit(), prim->GetKE());
+
+}
+
+void PlotQuenchingSpectrum(Analyzer *fAnalyzer){
+
+  TH2D *hBirks = new TH2D("hBirks", "Birks Law according to rat-pac",
+						  100,-0.05,10.05,
+						  100,0.55,1.05);
+
+  hBirks->SetTitle("10MeV protons; dLY/dX; (dE/dX)/(1+dE/dX))");
+
+  for(unsigned int iEvt=0; iEvt<fAnalyzer->GetNEvts(); iEvt++){
+
+	FillQuenchingSpectrum(hBirks, fAnalyzer, iEvt);
+
+  }
+
+  hBirks->Draw("COLZ");
 
 }

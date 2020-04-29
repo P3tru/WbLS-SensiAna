@@ -103,7 +103,7 @@ double ExtractEBinFromFilename(const std::string& filename){
   // Extract float from token using regex
   std::smatch m;
   std::regex e (R"(\d+\.\d+)");   // matches floats inside filename
-  std::regex_search (tokens[tokens.size()-3],m,e);
+  std::regex_search (tokens[tokens.size()-9],m,e);
   return std::stod(m.str());
 
 }

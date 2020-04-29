@@ -106,13 +106,13 @@ int main(int argc, char *argv[]) {
   sort(Ebins.begin(),Ebins.end());
   vector<double> corEbins = CorrectBinRangeArray(Ebins);
 
-  const int nbBinsPE = (User_nPEBins>-1) ? User_nPEBins : 201;
+  const int nbBinsPE = (User_nPEBins>-1) ? User_nPEBins : 1001;
   const double minPE = (User_minPE>-1) ? User_minPE : -0.5;
-  const double maxPE = (User_maxPE>-1) ? User_maxPE : 200.5;
+  const double maxPE = (User_maxPE>-1) ? User_maxPE : 1000.5;
 
-  const int nbBinsPMT = (User_nPMTBins>-1) ? User_nPMTBins : 201;
+  const int nbBinsPMT = (User_nPMTBins>-1) ? User_nPMTBins : 1001;
   const double minPMT = (User_minPMT>-1) ? User_minPMT : -0.5;
-  const double maxPMT = (User_maxPMT>-1) ? User_maxPMT : 200.5;
+  const double maxPMT = (User_maxPMT>-1) ? User_maxPMT : 1000.5;
 
   const int nThresh = (User_nThresh>-1) ? User_nThresh : 20;
 
@@ -161,7 +161,8 @@ int main(int argc, char *argv[]) {
 	file.SetHist(hNbPEVSHits);
 
 //	file.DoAnalysis(CollectPEAndHits);
-	file.DoAnalysis(CollectPromptPEAndHits);
+// 	file.DoAnalysis(CollectPromptPEAndHits);
+	file.DoAnalysisEV(CollectEVPEAndHits);
 
 	//////////////////////////////////////
 	// Recover hNPE/hNHits projection   //
@@ -188,7 +189,7 @@ int main(int argc, char *argv[]) {
 	///////////////////////////////
 
 	fOutput->cd();
-	hNbPEVSHits->Write();
+	file.GetHist()->Write();
 	hNbPE->Write();
 	hNHits->Write();
 
@@ -232,10 +233,14 @@ int main(int argc, char *argv[]) {
 
 		r = hNHits->Fit("gaus");
 
-		hNHits->GetFunction("gaus")->SetLineColor(kRed-4);
-		hNHits->GetFunction("gaus")->SetLineWidth(1.5);
-		hNHits->GetFunction("gaus")->SetLineStyle(2);
-		fFit = hNHits->GetFunction("gaus");
+		if(r == 0 ){
+
+		  hNHits->GetFunction("gaus")->SetLineColor(kRed-4);
+		  hNHits->GetFunction("gaus")->SetLineWidth(1.5);
+		  hNHits->GetFunction("gaus")->SetLineStyle(2);
+		  fFit = hNHits->GetFunction("gaus");
+
+		}
 
 	  }
 

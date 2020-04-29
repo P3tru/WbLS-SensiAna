@@ -43,3 +43,13 @@ vector<Hit> GetEVHitCollection(Analyzer *fAnalyzer, unsigned int iEvt, unsigned 
   return vHit;
 
 }
+
+void GetNPEAndNHitsFromEV(Analyzer *fAnalyzer, unsigned int iEvt, unsigned int iEV,
+						  double *NHits, double *Q){
+
+  auto *EV = GetRATEVOnEvt(fAnalyzer, iEvt, iEV);
+
+  *Q = EV->GetTotalCharge();
+  *NHits = EV->Nhits();
+
+}

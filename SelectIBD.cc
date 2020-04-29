@@ -91,8 +91,12 @@ int main(int argc, char *argv[]) {
   // Select DT cutoff
   auto User_DT = -1.;
 
+  auto User_E = -1.;
+
+  auto User_ManCalib = -1.;
   string User_Calib;
   User_Calib.clear();
+
   string User_fPDF;
   User_fPDF.clear();
 
@@ -108,6 +112,8 @@ int main(int argc, char *argv[]) {
 			  &User_tt,
 			  &User_DR,
 			  &User_DT,
+			  &User_E,
+			  &User_ManCalib,
 			  &User_Calib,
 			  &User_isBatch,
 			  &User_fPDF);
@@ -142,13 +148,14 @@ int main(int argc, char *argv[]) {
   const double DR = SetDefValue(User_DR, 1000.); // mm
   const double DT = SetDefValue(User_DT, 1.e6); // ns
 
+  const double TrueE = SetDefValue(User_E, 0.);
 
   // #### #### #### #### #### #### #### #### #### #### #### #### //
   // ####                SET CALIBRATION                    #### //
   // #### #### #### #### #### #### #### #### #### #### #### #### //
 
-  if(!User_Calib.empty())
-	MCCalib Cal(User_Calib);
+  MCCalib Cal;
+  const double ManCalib = SetDefValue(User_ManCalib, 0.);
 
 
   // #### #### #### #### #### #### #### #### #### #### #### #### //
@@ -219,24 +226,36 @@ int main(int argc, char *argv[]) {
 	// Split vector hit into prompt and delay
 	vector<Hit> vHitDelayed = SplitVHits(&vHit, 200);
 
-	// // Get E evts
-	// double NPE=-1; double NHits=-1; double E=-1;
-	// if(!User_Calib.empty()){
-	//
-	//   GetNPEAndNHitsFromHits(vHit, &NPE, &NHits);
-	//   E = ComputeECalib(Cal, NPE, NHits);
-	//
-	// }
-	//
-	// if(E>0){
-	//
-	//   if(E>MinEPrompt && E<MaxEPrompt){
-	//
-	// 	hEPrompt->Fill(E);
-	//
-	//   }
-	//
-	// }
+	// Get E evts
+
+	double NPE=-1; double NHits=-1; double E=-1;
+
+	if(ManCalib>0){
+
+	  GetNPEAndNHitsFromHits(vHit, &NPE, &NHits);
+	  E = NHits / ManCalib;
+
+	} else {
+
+	  if (!User_Calib.empty()) {
+
+		GetNPEAndNHitsFromHits(vHit, &NPE, &NHits);
+		E = ComputeECalib(Cal, NPE, NHits);
+
+	  }
+
+	}
+
+	if(E>0){
+
+	  if(E>MinEPrompt && E<MaxEPrompt){
+
+		hEPrompt->Fill(E-TrueE);
+
+	  }
+
+	}
+
 
 	// Fit position time both events
 	if(vHit.size()>0){
@@ -304,6 +323,7 @@ int main(int argc, char *argv[]) {
   for(auto h:hPosGuess){
 	h->Draw("SAME PLC PMC");
   }
+  c1->BuildLegend();
 
   c1 = new TCanvas("cTime", "cTime", 800, 600);
   c1->SetGrid();

@@ -26,4 +26,8 @@ RAT::DS::EV * GetRATEVOnEvt(Analyzer *fAnalyzer, unsigned int iEvt=0, unsigned i
 // Fill vector<Hit> with EV Info
 vector<Hit> GetEVHitCollection(Analyzer *fAnalyzer, unsigned int iEvt=0, unsigned int iEV=0);
 
+// Get NHits and Q from EV object
+void GetNPEAndNHitsFromEV(Analyzer *fAnalyzer, unsigned int iEvt, unsigned int iEV,
+						  double *NHits, double *Q);
+
 #endif
