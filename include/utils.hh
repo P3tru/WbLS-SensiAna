@@ -19,6 +19,9 @@
 #include <TVector3.h>
 #include <TH2D.h>
 #include <TFile.h>
+#include <TROOT.h>
+#include <TMath.h>
+#include <TCanvas.h>
 
 /////////////////////////   RAT   ///////////////////////////
 
