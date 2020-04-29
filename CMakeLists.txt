@@ -35,6 +35,7 @@ include_directories(
 # Locate RATROOT Libs
 #
 LINK_DIRECTORIES($ENV{RATROOT}/lib)
+LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 
 #----------------------------------------------------------------------------
 # Locate sources and headers for this project
@@ -79,3 +80,21 @@ target_link_libraries(SelectIBD ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
 
 add_executable(CreatePDF CreatePDF.cc ${sources} ${headers})
 target_link_libraries(CreatePDF ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
+
+add_executable(FlattenHits FlattenHits.cc ${sources} ${headers})
+target_link_libraries(FlattenHits ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
+
+add_executable(FitMacro FitMacro.C ${sources} ${headers})
+target_link_libraries(FitMacro ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -lEVFunctions -lHitFunctions -lLL)
+
+add_executable(TResVSCosTheta TResVSCosTheta.C ${sources} ${headers})
+target_link_libraries(TResVSCosTheta ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -lEVFunctions -lHitFunctions -lLL)
+
+add_executable(NMatrix NMatrix.C ${sources} ${headers})
+target_link_libraries(NMatrix ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -lEVFunctions -lHitFunctions -lLL)
+
+add_executable(PMatrix PMatrix.C ${sources} ${headers})
+target_link_libraries(PMatrix ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -lEVFunctions -lHitFunctions -lLL)
+
+add_executable(ProfileTResCosT ProfileTResCosT.C ${sources} ${headers})
+target_link_libraries(ProfileTResCosT ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -lEVFunctions -lHitFunctions -lLL)
