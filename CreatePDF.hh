@@ -11,40 +11,164 @@
 #include <cmath>
 #include <vector>
 
+/////////////////////////   BOOST  ///////////////////////////
+#include <boost/algorithm/string/predicate.hpp>
+
+/////////////////////////   ROOT   ///////////////////////////
+#include <TH1D.h>
+#include <TH2D.h>
+
 /////////////////////////   USER  ///////////////////////////
+#include "utils.hh"
+
+#include "Analyzer.hh"
 #include "HitClass.hh"
+#include "EVFunctions.hh"
+#include "HitFunctions.hh"
+#include "MCFunctions.hh"
+#include "AnalyzerFunctions.hh"
+#include "FlatParticle.hh"
 
-double GetTAvg(vector<Hit> vHit){
-  TH1D *hdummy = new TH1D("hdummy", "dummy", 1e6, 0., 1e6);
+#include "ProgressBar.hpp"
 
-  for(auto h:vHit){
-    hdummy->Fill(h.GetT());
-  }
-
-  double TAvg = hdummy->GetMean();
-  delete hdummy;
-  return TAvg;
+int GenPromptCut(){
+  static int i = -20;
+  return std::abs(i++);
 }
 
-void FillResiduals(TH1D *hResid, vector<Hit> vHit,
-				   TVector3 Origin = TVector3(0.,0.,0.),
-				   double SoL = 224.9,
-				   double TAvg = 0.,
-				   bool isWeight=true){
+static double GenCTBin(){
 
-  for(auto h: vHit){
-    if(isWeight){
-	  hResid->Fill(h.CalculateTResid(Origin, SoL) - TAvg,
-				   1/(double)(vHit.size()));
-    } else{
-	  hResid->Fill(h.CalculateTResid(Origin, SoL) - TAvg);
-    }
-  }
+  static int iCTBin = 0;
+  static double CTBin = 0;
+  return cos(CTBin + (10 * iCTBin++));
 
 }
 
+// #define SOL 224.6 // WATER
+#define SOL 216.5 // WbLS 1%
+
+void LoopAndFillHistos(Analyzer *FileAnalyzer,
+					   unsigned long nEvts, unsigned long iEvt,
+					   int PromptWindow, int PromptCut,
+					   TH1D *hNHits, TH1D *hQ,
+					   TH1D *hTRes, TH1D* hCTheta, TH2D *hTResVSCT,
+					   bool isScaling = true,
+					   vector<TH1D*> vhTResiduals = vector<TH1D*>(), vector<int> vPromptCut = vector<int>()){
+
+  auto nEvtToProcess = nEvts-iEvt;
+  auto nEvtProcessed = 0;
+
+  bool isVCutDefined = !vhTResiduals.empty() && !vPromptCut.empty();
+  bool isVCutOK = vhTResiduals.size() == vPromptCut.size();
+  auto nCuts = isVCutDefined && isVCutOK ? vhTResiduals.size() : 0;
+  vector<int> NEvtsProcessedCut(nCuts, 0);
+
+  ProgressBar progressBar(nEvtToProcess, 70);
+
+  for(iEvt; iEvt<nEvts; iEvt++){
+
+	if(EoF) break;
+
+	// record the tick
+	++progressBar;
+
+	// record Prim particle info
+	FlatParticle PrimPart = GetPrimaryParticleInfo(FileAnalyzer, iEvt);
+	double PrimPartKE = PrimPart.GetKinE();
+	TVector3 TrueOrigin = PrimPart.GetPos();
+	TVector3 TrueDir = PrimPart.GetDir().Unit();
+
+	// recover EV info
+	double NHits, Q;
+	GetNPEAndNHitsFromEV(FileAnalyzer, iEvt, 0, &NHits, &Q);
+	hNHits->Fill(NHits);
+	hQ->Fill(Q);
+
+	// Recover Hit vector for 1 evt
+	// vector<Hit> vHit;
+	vector<Hit> vHit = GetEVHitCollection(FileAnalyzer, iEvt);
+	SortVHits(&vHit);
+
+	// Apply cuts if defined
+	// DAQ
+	if(PromptWindow>0){
+	  Hit hCut(TVector3(0, 0, 0),
+			   0,
+			   PromptWindow + vHit.begin()->GetT());
+	  RemoveHitsAfterCut(vHit, hCut);
+	}
+
+	// Prompt evt
+	if(PromptCut>0){
+	  Hit hCut(TVector3(0, 0, 0),
+			   0,
+			   PromptCut + vHit.begin()->GetT());
+	  RemoveHitsAfterCut(vHit, hCut);
+	}
+
+	// Fill histograms
+	if(vHit.size()>0){
+
+	  FillAll(hTRes, hCTheta,hTResVSCT, vHit,
+			  TrueOrigin,
+			  SOL,
+			  TrueDir);
+
+	  nEvtProcessed++;
+
+	}
+
+	if(isVCutDefined && isVCutOK){
+
+	  for(auto it=vPromptCut.begin(); it!=vPromptCut.end(); it++){
+
+		auto pos = distance(vPromptCut.begin(), it);
+
+		SortVHits(&vHit);
+
+		if(vHit.size()>0) {
+		  RemoveHitsAfterCut(vHit, Hit(TVector3(), 0., vHit[0].GetT() + *it));
+		}
+
+		if(vHit.size()>0) {
+
+		  FillResiduals(vhTResiduals[pos], vHit,
+						TrueOrigin,
+						SOL,
+						false);
+
+		  NEvtsProcessedCut[pos]++;
+
+		}
+
+	  }
+
+	}
 
 
+	// display the bar
+	progressBar.display();
+
+  } // END FOR iEVT
+
+  if(isScaling){
+
+	// #### #### #### #### #### #### #### #### #### #### #### #### //
+	// ####                      RESCALE                      #### //
+	// #### #### #### #### #### #### #### #### #### #### #### #### //
+
+	hTRes->Scale(1/(double)(nEvtProcessed));
+	hCTheta->Scale(1/(double)(nEvtProcessed));
+	if(isVCutDefined && isVCutOK) {
+	  for (auto iCut = 0; iCut < nCuts; iCut++) {
+		vhTResiduals[iCut]->Scale(1 / (double) (NEvtsProcessedCut[iCut]));
+	  }
+	}
+	hTResVSCT->Scale(1/(double)(nEvtProcessed));
+
+  }
+
+}
 
 void ShowUsage(string name){
 
@@ -53,37 +177,50 @@ void ShowUsage(string name){
 
 	   << "\t-h\tShow this help message\n"
 
+	   << "\t-DAQ\tSet a DAQ Window for the evts (int)\n"
+	   << "\t-pc\tSet prompt cut from first hit (int)\n"
+
 	   << "\t-b\tSet batch mode\n"
 
-	   << "\t-nevts\tNEvts to process (int)\n"
-	   << "\t-ievt\tStart at Evt #i (int)\n"
+	   << "\t-NEvts\tNEvts to process (int)\n"
+	   << "\t-iEvt\tStart at Evt #i (int)\n"
 
-	   << "\t-tbins-prompt\tSet nb bins for tresid hist (int)\n"
-	   << "\t-mint-prompt\tSet min val for tresid hist (double)\n"
-	   << "\t-maxt-prompt\tSet max val for tresid hist (double)\n"
+	   << "\t-TResBins\tSet nb bins for tresid hist (int)\n"
+	   << "\t-TResMin\tSet min val for tresid hist (double)\n"
+	   << "\t-TResMax\tSet max val for tresid hist (double)\n"
 
-	   << "\t-tbins-delay\tSet nb bins for tresid hist (int)\n"
-	   << "\t-mint-delay\tSet min val for tresid hist (double)\n"
-	   << "\t-maxt-delay\tSet max val for tresid hist (double)\n"
+	   << "\t-CosTBins\tSet nb bins for tresid hist (int)\n"
+	   << "\t-CosTMin\tSet min val for tresid hist (double)\n"
+	   << "\t-CosTMax\tSet max val for tresid hist (double)\n"
 
 	   << "\t-xx\tSet X for true origin vector (double)\n"
-	   << "\t-yy\tSet X for true origin vector (double)\n"
-	   << "\t-zz\tSet X for true origin vector (double)\n"
+	   << "\t-yy\tSet Y for true origin vector (double)\n"
+	   << "\t-zz\tSet Z for true origin vector (double)\n"
+
+	   << "\t-dir-xx\tSet X for true direction vector (double)\n"
+	   << "\t-dir-yy\tSet Y for true direction vector (double)\n"
+	   << "\t-dir-zz\tSet Z for true direction vector (double)\n"
 
 	   << "\t-mc\tinput file (ROOT)\n"
+	   << "\t-txt\tinput file list (.txt)\n"
+	   << "\t-o\toutput file (ROOT)\n"
 
 	   << endl;
 
 }
 
 
-void ProcessArgs(TApplication *theApp, string *filename,
+void ProcessArgs(TApplication *theApp,
+				 string *filename, string *listname,
+				 int *User_PromptWindow,
 				 int *User_PromptCut,
 				 int *User_nEvts, int *User_iEvt,
-				 int *User_nTResidBins_Prompt, double *User_minTResid_Prompt, double *User_maxTResid_Prompt,
-				 int *User_nTResidBins_Delay, double *User_minTResid_Delay, double *User_maxTResid_Delay,
+				 int *User_nTResidBins, double *User_minTResid, double *User_maxTResid,
+				 int *User_nCThetaBins, double *User_minCTheta, double *User_maxCTheta,
 				 double *User_xx, double *User_yy, double *User_zz,
-				 bool *User_isBatch) {
+				 double *User_Dir_xx, double *User_Dir_yy, double *User_Dir_zz,
+				 bool *User_isBatch,
+				 string *outputname) {
 
   // Reading user input parameters
   if (theApp->Argc() < 2) {
@@ -99,40 +236,55 @@ void ProcessArgs(TApplication *theApp, string *filename,
 	  ShowUsage(theApp->Argv(0));
 	  exit(0);
 
-	} else if ((arg == "-pc")) {
+	} else if (boost::iequals(arg, "-DAQ")) {
+	  *User_PromptWindow = stoi(theApp->Argv(++i));
+	} else if (boost::iequals(arg, "-pc")) {
 	  *User_PromptCut = stoi(theApp->Argv(++i));
 
-	} else if ((arg == "-nevts")) {
+	} else if (boost::iequals(arg, "-NEvts")) {
 	  *User_nEvts = stoi(theApp->Argv(++i));
-	} else if ((arg == "-ievt")) {
+	} else if (boost::iequals(arg, "-iEvt")) {
 	  *User_iEvt = stoi(theApp->Argv(++i));
 
-	} else if ((arg == "-tbins-prompt")) {
-	  *User_nTResidBins_Prompt = stoi(theApp->Argv(++i));
-	} else if ((arg == "-mint-prompt")) {
-	  *User_minTResid_Prompt = stod(theApp->Argv(++i));
-	} else if ((arg == "-maxt-prompt")) {
-	  *User_maxTResid_Prompt = stod(theApp->Argv(++i));
+	} else if (boost::iequals(arg,"-TResBins")) {
+	  *User_nTResidBins = stoi(theApp->Argv(++i));
+	} else if (boost::iequals(arg,"-TResMin")) {
+	  *User_minTResid = stod(theApp->Argv(++i));
+	} else if (boost::iequals(arg, "-TResMax")) {
+	  *User_maxTResid = stod(theApp->Argv(++i));
 
-	} else if ((arg == "-tbins-delay")) {
-	  *User_nTResidBins_Delay = stoi(theApp->Argv(++i));
-	} else if ((arg == "-mint-delay")) {
-	  *User_minTResid_Delay = stod(theApp->Argv(++i));
-	} else if ((arg == "-maxt-delay")) {
-	  *User_maxTResid_Delay = stod(theApp->Argv(++i));
+	} else if (boost::iequals(arg, "-CosTBins")) {
+	  *User_nCThetaBins = stoi(theApp->Argv(++i));
+	} else if (boost::iequals(arg, "-CosTMin")) {
+	  *User_minCTheta = stod(theApp->Argv(++i));
+	} else if (boost::iequals(arg, "-CosTMax")) {
+	  *User_maxCTheta = stod(theApp->Argv(++i));
 
-	} else if ((arg == "-xx")) {
+	} else if (boost::iequals(arg, "-xx")) {
 	  *User_xx = stod(theApp->Argv(++i));
-	} else if ((arg == "-yy")) {
+	} else if (boost::iequals(arg, "-yy")) {
 	  *User_yy = stod(theApp->Argv(++i));
-	} else if ((arg == "-zz")) {
+	} else if (boost::iequals(arg, "-zz")) {
 	  *User_zz = stod(theApp->Argv(++i));
 
-	} else if ((arg == "-b")) {
+	} else if (boost::iequals(arg, "-dir-xx")) {
+	  *User_Dir_xx = stod(theApp->Argv(++i));
+	} else if (boost::iequals(arg, "-dir-yy")) {
+	  *User_Dir_yy = stod(theApp->Argv(++i));
+	} else if (boost::iequals(arg, "-dir-zz")) {
+	  *User_Dir_zz = stod(theApp->Argv(++i));
+
+	} else if (boost::iequals(arg, "-b")) {
 	  *User_isBatch=true;
 
-	} else if ((arg == "-mc")) {
+	} else if (boost::iequals(arg,"-mc")) {
 	  *filename = theApp->Argv(++i);
+
+	} else if (boost::iequals(arg,"-txt")) {
+	  *listname = theApp->Argv(++i);
+
+	} else if (boost::iequals(arg,"-o")) {
+	  *outputname = theApp->Argv(++i);
 
 	} else {
 	  cout << "Unkown parameter" << endl;
@@ -140,12 +292,12 @@ void ProcessArgs(TApplication *theApp, string *filename,
 	}
   }
 
-  if(filename->empty()){
-	cout << "ERROR: No MC input file provided!" << endl;
+  if(filename->empty() && listname->empty()){
+	cout << "ERROR: No input file provided!" << endl;
 	exit(EXIT_FAILURE);
-  // } else if(!IsFileExist(*filename)){
-	// cout << "ERROR: MC file doesn't exist!!" << endl;
-	// exit(EXIT_FAILURE);
+	} else if(!IsFileExist(*filename) && !IsFileExist(*listname)){
+	cout << "ERROR: file doesn't exist!!" << endl;
+	exit(EXIT_FAILURE);
   }
 
 }
