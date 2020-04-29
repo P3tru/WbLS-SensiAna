@@ -26,7 +26,7 @@
 #include <TRandom3.h>
 
 /////////////////////////   USER   //////////////////////////
-#include "../ProgressBar.hpp"
+#include "ProgressBar.hpp"
 
 using namespace std;
 

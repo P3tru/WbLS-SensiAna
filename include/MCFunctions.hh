@@ -18,99 +18,56 @@
 /////////////////////////   USER  ///////////////////////////
 #include "Analyzer.hh"
 #include "HitClass.hh"
+#include "FlatParticle.hh"
 
 using namespace std;
+
+// Print basic track info
+// Useful for debugging
+void PrintTrackInfo(RAT::DS::MC *mc, unsigned int iTrack);
 
 // Access the MC object from RAT
 // at iEvt (from MCTree)
 RAT::DS::MC * GetRATMCOnEvt(Analyzer *fAnalyzer, unsigned int iEvt=0);
 
+// Get vector<FlatPhoton> of photons in evt, storing their wl and create proc
+vector<FlatPhoton> GetPhotonsFromEvt(RAT::DS::MC * mc);
+
 // Fill vector<Hit> with MC Info
-vector<Hit> GetMCHitCollection(Analyzer *fAnalyzer, unsigned int iEvt=0);
+vector<Hit> GetMCHitCollection(Analyzer *fAnalyzer, unsigned int iEvt=0, bool isSource=false);
 
+// Fill vector<Hit> with MC Info from one mother particle
+vector<Hit> GetVHitsFromPart(Analyzer *fAnalyzer, unsigned int iEvt=0,
+							 string sPartName="e+",
+							 vector<ComplexParticle> *vCPart = NULL);
 
-void FillBirksLaw(Analyzer *fAnalyzer, unsigned int iEvt, TH2D *h2D= nullptr);
+// Get info from MC particle in a flat way
+void GetPartInfoFromTrackStep(FlatParticle *fp, RAT::DS::MCTrack *mctrack);
 
-class TPhoton{
+// Get ID from MC particle in a flat way
+void GetPartIDFromTrackStep(G4Particle *p, RAT::DS::MCTrack *mctrack);
 
- protected:
-  int ID;
-  int ParentID;
-  double WL;
+// Get vector<ComplexParticle> of MC object
+vector<ComplexParticle> GetVPart(RAT::DS::MC * mc, const string& sPartName);
 
- public:
-  TPhoton(int id, int parent_id, double wl) : ID(id), ParentID(parent_id), WL(wl) {
+// Fill vector<ComplexParticle> with daughters photons
+vector<FlatPhoton> GetAndFillPhotonsToVPart(RAT::DS::MC * mc, vector<ComplexParticle> *vPart);
 
-  }
-  virtual ~TPhoton() {
+bool IsParticle(RAT::DS::MCTrack *mctrack, const string& name);
 
-  }
-  int GetId() const {
-	return ID;
-  }
-  void SetId(int id) {
-	ID = id;
-  }
-  int GetParentId() const {
-	return ParentID;
-  }
-  void SetParentId(int parent_id) {
-	ParentID = parent_id;
-  }
-  double GetWl() const {
-	return WL;
-  }
-  void SetWl(double wl) {
-	WL = wl;
-  }
+// Fill dEdX for a ComplexParticle
+void FilldEdX(ComplexParticle &CP, Analyzer *fAnalyzer, unsigned int iEvt=0);
 
-};
+// Sum total dEdX for a vector<ComplexParticle> from by an event
+double SumdEdX(vector<ComplexParticle> vCP);
 
-class TProton{
+// Get vector protons with photons
+vector<ComplexParticle> GetProtonLY(Analyzer *fAnalyzer, unsigned int iEvt);
 
- protected:
-  int ID;
-  vector<TPhoton> photonChildren;
-  double dE;
-  double dX;
+// Create spectrum E incoming VS proton recoil
+void FillProtonRecoilSpectrum(TH2D* h2D, Analyzer *fAnalyzer, unsigned iEvt);
 
- public:
-  TProton() {
-
-	dE=-1;
-	dX=-1;
-	// photonChildren = vector<TPhoton>();
-
-  }
-  virtual ~TProton() {
-
-  }
-
-  vector<TPhoton> GetPhotonChildren() const {
-	return photonChildren;
-  }
-  void AddPhoton(TPhoton photon){
-	photonChildren.push_back(photon);
-  }
-  double GetDe() const {
-	return dE;
-  }
-  void SetDe(double d_e) {
-	dE = d_e;
-  }
-  double GetDx() const {
-	return dX;
-  }
-  void SetDx(double d_x) {
-	dX = d_x;
-  }
-  int GetId() const {
-	return ID;
-  }
-  void SetId(int id) {
-	ID = id;
-  }
-};
-
+// Fill Quenching spectrum (Check birks law for example)
+void FillQuenchingSpectrum(TH2D *h2D, Analyzer *fAnalyzer, unsigned int iEvt);
 
 #endif

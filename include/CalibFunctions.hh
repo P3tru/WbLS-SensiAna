@@ -262,6 +262,6 @@ static vector<double> GetArray(vector< pair<double, double> > *vP){
 }
 
 
-double ComputeECalib(const MCCalib& CalibObj, double NPE, double NHits);
+double ComputeECalib(const MCCalib& CalibObj, double NPE, double NHits, TGraph *grL = NULL);
 
 #endif
