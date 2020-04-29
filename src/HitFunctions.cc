@@ -141,3 +141,86 @@ void GetNPEAndNHitsFromHits(vector<Hit> Hits, double *NPE, double *NHits){
   *NHits=mNHits;
 
 }
+
+void FillResiduals(TH1D *hResid, const vector<Hit>& vHit,
+				   const TVector3& Origin,
+				   double SoL,
+				   bool isWeight){
+
+  for(auto h: vHit){
+	if(isWeight){
+	  hResid->Fill(h.CalculateTResid(Origin, SoL),
+				   1/(double)(vHit.size()));
+	} else{
+	  hResid->Fill(h.CalculateTResid(Origin, SoL));
+	}
+  }
+
+}
+
+void FillCTheta(TH1D *hCT, const vector<Hit>& vHit,
+				const TVector3& Origin, const TVector3& TrueDir,
+				bool isWeight){
+
+  for(auto h: vHit) {
+	if(isWeight){
+	  hCT->Fill(h.CalcuateCosTHit(Origin, TrueDir), 1/(double)(vHit.size()));
+	} else {
+	  hCT->Fill(h.CalcuateCosTHit(Origin, TrueDir));
+	}
+  }
+
+}
+
+void FillTResVSCosTheta(TH2D *h2D, const vector<Hit>& vHit,
+						const TVector3& TrueOrigin,
+						double SoL,
+						const TVector3& TrueDir,
+						bool isWeight){
+
+  for(auto h:vHit){
+    if(isWeight){
+	  h2D->Fill(h.CalculateTResid(TrueOrigin, SoL), h.CalcuateCosTHit(TrueOrigin, TrueDir), 1/(double)(vHit.size()));
+    } else {
+	  h2D->Fill(h.CalculateTResid(TrueOrigin, SoL), h.CalcuateCosTHit(TrueOrigin, TrueDir));
+    }
+  }
+
+}
+
+void FillAll(TH1D *hResid, TH1D *hCT, TH2D *h2D, const vector<Hit>& vHit,
+			 const TVector3& TrueOrigin,
+			 double SoL,
+			 const TVector3& TrueDir,
+			 bool isWeight){
+  for(auto h:vHit){
+    if(isWeight){
+	  hResid->Fill(h.CalculateTResid(TrueOrigin, SoL), 1/(double)(vHit.size()));
+	  hCT->Fill(h.CalcuateCosTHit(TrueOrigin, TrueDir), 1/(double)(vHit.size()));
+	  h2D->Fill(h.CalculateTResid(TrueOrigin, SoL), h.CalcuateCosTHit(TrueOrigin, TrueDir), 1/(double)(vHit.size()));
+    } else {
+	  hResid->Fill(h.CalculateTResid(TrueOrigin, SoL));
+	  hCT->Fill(h.CalcuateCosTHit(TrueOrigin, TrueDir));
+	  h2D->Fill(h.CalculateTResid(TrueOrigin, SoL), h.CalcuateCosTHit(TrueOrigin, TrueDir));
+    }
+  }
+
+}
+
+vector<double> FlatenVHit(vector<Hit> vHit){
+
+  vector<double> vFlatHit;
+
+  for(auto h:vHit){
+	vFlatHit.emplace_back(h.GetPos().x());
+	vFlatHit.emplace_back(h.GetPos().y());
+	vFlatHit.emplace_back(h.GetPos().z());
+	vFlatHit.emplace_back(h.GetT());
+	// PHOTON SOURCE
+	// All 0 for now; use MC info to fill this eventually (C+S?)
+	vFlatHit.emplace_back(h.GetTrueProcess());
+  }
+
+  return vFlatHit;
+
+}
