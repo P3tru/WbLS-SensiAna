@@ -10,6 +10,7 @@ CPPFLAGS       = $(DEBUG_LEVEL) $(EXTRA_CCFLAGS)
 CCFLAGS        = $(CPPFLAGS)
 
 RM = rm -f
+MV = mv
 
 SRCDIR := src
 INCDIR := include
@@ -25,11 +26,12 @@ RATLIBS  := -L$(RATROOT)/lib -lRATEvent
 BOOSTCFLAGS := -I/usr/include/boost/
 BOOSTLIBS   := -lboost_system -lboost_filesystem
 
-CPPFLAGS  += -I$(ROOTSYS)/include -I$(INCDIR) $(ROOTCFLAGS) -I$(RATROOT)/include
+CPPFLAGS  += -I$(INCDIR) $(ROOTCFLAGS) -I$(RATROOT)/include
 CPPFLAGS  +=  $(BOOSTCFLAGS)
 EXTRALIBS  = $(ROOTLIBS)
 EXTRALIBS += $(RATLIBS)
 EXTRALIBS += $(BOOSTLIBS)
+EXTRALIBS += -L$(PWD)/lib -lcnpy -lz
 
 SRCS = $(wildcard $(SRCDIR)/*.cc)
 OBJS = $(subst .cc,.o,$(SRCS))
@@ -41,6 +43,21 @@ help:
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 all: TemplateAnalysis
+
+# TARGETLIB ?= CalibFunctions
+# TARGETLIB ?= LL
+# TARGETLIB ?= EVFunctions
+# TARGETLIB ?= HitFunctions
+# TARGETLIB ?= MCFunctions
+TARGETLIB ?= AnalyzerFunctions
+
+lib$(TARGETLIB).so: $(TARGETLIB).o
+	@echo "Compiling library $@"
+	$(CXX) $(CPPFLAGS) -shared $^ -o lib/$@ $(EXTRALIBS)
+	$(RM) $^
+
+$(TARGETLIB).o: 
+	$(CXX) $(CPPFLAGS) -fPIC -c src/$(TARGETLIB).cc -o $@ $(EXTRALIBS)
 
 TemplateAnalysis: TemplateAnalysis.o $(OBJS)
 	$(CXX) $(CPPFLAGS) -o TemplateAnalysis TemplateAnalysis.cc $(OBJS) $(EXTRALIBS)
@@ -86,5 +103,9 @@ CreatePDF: CreatePDF.o $(OBJS)
 	$(CXX) $(CPPFLAGS) -o CreatePDF CreatePDF.cc $(OBJS) $(EXTRALIBS)
 	$(RM) CreatePDF.o $(OBJS)
 
+FlattenHits: FlattenHits.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o FlattenHits FlattenHits.cc $(OBJS) $(EXTRALIBS)
+	$(RM) FlattenHits.o $(OBJS)
+
 clean:
-	$(RM) $(OBJS) TemplateAnalysis TemplateAnalysisMT EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix PlotPEVSNHits VtxRecon SelectIBD CreatePDF
+	$(RM) $(OBJS) TemplateAnalysis TemplateAnalysisMT EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix PlotPEVSNHits VtxRecon SelectIBD CreatePDF FlattenHits
