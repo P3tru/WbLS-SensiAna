@@ -68,6 +68,6 @@ TH2D *GetHQVST(vector<Hit> vHit);
 void GetNPEAndNHitsFromHits(vector<Hit> Hits, double *NPE, double *NHits);
 
 // Flatten hit vector for numpy use
-vector<double> FlatenVHit(vector<Hit> vHit);
+vector<double> FlatenVHit(vector<Hit> vHit, int MCID = -1);
 
 #endif //_HITFUNCTIONS_HH_

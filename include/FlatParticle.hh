@@ -64,11 +64,24 @@ class FlatPhoton: public G4Particle{
   void SetProcess(int process) { FlatPhoton::process = process; }
 };
 
+class Step {
+ protected:
+  double dE;
+  double dX;
+ public:
+  Step(double d_e, double d_x) : dE(d_e), dX(d_x) {}
+  double GetDe() const { return dE; }
+  void SetDe(double d_e) { dE = d_e; }
+  double GetDx() const { return dX; }
+  void SetDx(double d_x) { dX = d_x; }
+};
+
 class ComplexParticle: public FlatParticle{
  protected:
   double dE;
   double dX;
   vector<FlatPhoton> vP;
+  vector<Step> vStep;
  public:
   ComplexParticle() = default;
   ComplexParticle(const string &name, const TVector3 &pos, const TVector3 &dir, double kin_e)
@@ -87,6 +100,12 @@ class ComplexParticle: public FlatParticle{
   virtual ~ComplexParticle() { }
   void AddPhoton(FlatPhoton p){
 	vP.emplace_back(p);
+  }
+  void AddStep(Step s){
+    vStep.emplace_back(s);
+  }
+  const vector<Step> &GetVStep() const {
+	return vStep;
   }
   void RemovePhoton(__gnu_cxx::__normal_iterator<const FlatPhoton *, vector<FlatPhoton>> itPhoton){
     vP.erase(itPhoton);

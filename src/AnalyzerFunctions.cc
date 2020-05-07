@@ -49,14 +49,15 @@ void AddFAnalyzers(vector<Analyzer*> *vFAnalyzer, const string& inputName, const
 void GetVHitAndDumpFlatNPZ(Analyzer *fAnalyzer, unsigned iEvt, const string& NPZName, const string& mode){
 
   vector<Hit> vHit = GetMCHitCollection(fAnalyzer, iEvt, true);
+  auto MCID = GetRATMCOnEvt(fAnalyzer, iEvt)->GetID();
 
   const auto NHits = vHit.size();
-  vector<double> vNPY = FlatenVHit(vHit);
+  vector<double> vNPY = FlatenVHit(vHit, MCID);
 
   cnpy::npz_save(NPZName,
 				 Form("Evt%d", iEvt),
 				 &vNPY[0],
-				 {NHits, 5}, // NHits vector of 5 dimension {X, Y, Z, T, Source}
+				 {NHits, 6}, // NHits vector of 6 dimension {X, Y, Z, T, Source, MCID}
 				 mode);
 
 }

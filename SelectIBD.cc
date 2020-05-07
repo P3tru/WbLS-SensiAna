@@ -125,6 +125,8 @@ int main(int argc, char *argv[]) {
   // Therefore, add a cut to physically separate prompt+delay
   const double DAQWindow = SetDefValue(User_DAQWindow, 256); // ns
 
+  const int PromptCut = SetDefValue(User_PromptCut, 0);
+
   const double MinEPrompt = SetDefValue(User_MinEPrompt, 1.); // MeV
   const double MaxEPrompt = SetDefValue(User_MaxEPrompt, 10.); // MeV
 
@@ -162,7 +164,12 @@ int main(int argc, char *argv[]) {
   // ####                LOAD  PDF                          #### //
   // #### #### #### #### #### #### #### #### #### #### #### #### //
 
-  TH1D *hPDF = GetHPDF(User_fPDF.c_str(), "hTResiduals");
+  TH1D *hPDF;
+  if(PromptCut > 0  && PromptCut < 20){
+	hPDF = GetHPDF(User_fPDF.c_str(), Form("hTResidualsCut%d", PromptCut));
+  } else {
+	hPDF = GetHPDF(User_fPDF.c_str(), "hTResiduals");
+  }
   if(hPDF){
 	cout << "PDF loaded" << endl;
   }
@@ -177,7 +184,7 @@ int main(int argc, char *argv[]) {
 
 	hPosGuess[iPos] = new TH1D(Form("hPosGuess%d", iPos),
 							   Form("Vtx Reconstruction Axis %d", iPos),
-							   21, -1000.5, 1000.5);
+							   201, -1000.5, 1000.5);
   }
 
   TH1D *hTGuess;
@@ -193,8 +200,21 @@ int main(int argc, char *argv[]) {
   // ####                CREATE OUTPUTS                     #### //
   // #### #### #### #### #### #### #### #### #### #### #### #### //
 
-  auto *foutput = new TFile(Form("%s_RECON.root",inputName.c_str()),
+  auto *fOutput = new TFile(Form("%s_PromptCut%d_RECON.root", inputName.c_str(), PromptCut),
 							"RECREATE");
+  auto *outTree = new TTree("fitres", "Fit_Results");
+  double xBF, yBF, zBF, TBF;
+  double Prob, Chi2;
+  int NdF;
+
+  outTree->Branch("X", &xBF, "X/D");
+  outTree->Branch("Y", &yBF, "Y/D");
+  outTree->Branch("Z", &zBF, "Z/D");
+  outTree->Branch("T", &TBF, "T/D");
+
+  outTree->Branch("Chi2", &Chi2, "Chi2/D");
+  outTree->Branch("NdF", &NdF, "NdF/I");
+  outTree->Branch("Prob", &Prob, "Prob/D");
 
 
   // #### #### #### #### #### #### #### #### #### #### #### #### //
@@ -262,7 +282,9 @@ int main(int argc, char *argv[]) {
 
 	  if(hPDF){
 		SortVHits(&vHit);
-		auto *FT = new FitTheia(hPDF, TrueOrigin, TrueTime, vHit);
+		if(PromptCut>0)
+		  RemoveHitsAfterCut(vHit, Hit(TVector3(), 0., vHit[0].GetT()+PromptCut));
+		auto *FT = new FitTheia(hPDF, TrueOrigin, TrueTime, vHit, 1000., 1000.);
 
 		const size_t dim = 4;
 		RAT::SimulatedAnnealing<4> anneal(FT);
@@ -273,31 +295,49 @@ int main(int argc, char *argv[]) {
 
 		seed[0] = 1; seed[1] = 1; seed[2] = 1; seed[3] = -1/SQRT5;
 		ScaleSimplexCoord(&seed);
+		seed[3]/=10;
 		anneal.SetSimplexPoint(0,seed);
 		seed[0] = 1; seed[1] = -1; seed[2] = -1; seed[3] = -1/SQRT5;
 		ScaleSimplexCoord(&seed);
+		seed[3]/=10;
 		anneal.SetSimplexPoint(1,seed);
 		seed[0] = -1; seed[1] = 1; seed[2] = -1; seed[3] = -1/SQRT5;
 		ScaleSimplexCoord(&seed);
+		seed[3]/=10;
 		anneal.SetSimplexPoint(2,seed);
 		seed[0] = -1; seed[1] = -1; seed[2] = 1; seed[3] = -1/SQRT5;
 		ScaleSimplexCoord(&seed);
+		seed[3]/=10;
 		anneal.SetSimplexPoint(3,seed);
 		seed[0] = 0; seed[1] = 0; seed[2] = 0; seed[3] = SQRT5 - 1/SQRT5;
 		ScaleSimplexCoord(&seed);
+		seed[3]/=10;
 		anneal.SetSimplexPoint(4,seed);
 
-		anneal.Anneal(10,150,50,4.0); // Minimize
+		anneal.Anneal(10,200,100,4.0); // Minimize
 
 		anneal.GetBestPoint(point);
 
+		xBF = point[0]; yBF=point[1]; zBF=point[2]; TBF=point[3];
+
+		auto hBF = GetBestFitHTResids(point, hPDF, TrueOrigin, TrueTime, vHit, iEvt);
+		Prob = CalculateProb(hPDF, hBF, &Chi2, &NdF);
+
+		outTree->Fill();
+
 		for(int iPos = 0; iPos<3; iPos++) {
 
-		  hPosGuess[iPos]->Fill(point[iPos]);
+		  if(Prob > 0.10){
+
+			hPosGuess[iPos]->Fill(point[iPos]);
+
+		  }
 
 		}
 
-		hTGuess->Fill(point[3]);
+		if(Prob > 0.10) {
+		  hTGuess->Fill(point[3]);
+		}
 
 		delete FT;
 
@@ -333,13 +373,14 @@ int main(int argc, char *argv[]) {
   c1->SetGrid();
   hEPrompt->Draw();
 
-  foutput->cd();
+  fOutput->cd();
+  outTree->Write();
   for(auto h:hPosGuess){
 	h->Write();
   }
   hTGuess->Write();
   hEPrompt->Write();
-  foutput->Close();
+  fOutput->Close();
 
 
   /////////////////////////

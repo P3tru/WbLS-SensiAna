@@ -64,6 +64,8 @@ double SumdEdX(vector<ComplexParticle> vCP);
 // Get vector protons with photons
 vector<ComplexParticle> GetProtonLY(Analyzer *fAnalyzer, unsigned int iEvt);
 
+vector<ComplexParticle> GetdEdX(Analyzer *fAnalyzer, unsigned int iEvt, const string& sPartName);
+
 // Create spectrum E incoming VS proton recoil
 void FillProtonRecoilSpectrum(TH2D* h2D, Analyzer *fAnalyzer, unsigned iEvt);
 

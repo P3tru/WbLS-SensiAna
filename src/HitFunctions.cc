@@ -207,7 +207,7 @@ void FillAll(TH1D *hResid, TH1D *hCT, TH2D *h2D, const vector<Hit>& vHit,
 
 }
 
-vector<double> FlatenVHit(vector<Hit> vHit){
+vector<double> FlatenVHit(vector<Hit> vHit, int MCID){
 
   vector<double> vFlatHit;
 
@@ -219,6 +219,9 @@ vector<double> FlatenVHit(vector<Hit> vHit){
 	// PHOTON SOURCE
 	// All 0 for now; use MC info to fill this eventually (C+S?)
 	vFlatHit.emplace_back(h.GetTrueProcess());
+	// ADD EV ID
+	// useful to reconstruct a rat object
+	vFlatHit.emplace_back(MCID);
   }
 
   return vFlatHit;

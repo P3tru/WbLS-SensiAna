@@ -26,12 +26,18 @@ RATLIBS  := -L$(RATROOT)/lib -lRATEvent
 BOOSTCFLAGS := -I/usr/include/boost/
 BOOSTLIBS   := -lboost_system -lboost_filesystem
 
+### Python
+PYTHONCFLAGS := $(shell python3.8-config --cflags)
+PYTHONLIBS   := $(shell python3.8-config --ldflags) -lpython3.8
+
 CPPFLAGS  += -I$(INCDIR) $(ROOTCFLAGS) -I$(RATROOT)/include
 CPPFLAGS  +=  $(BOOSTCFLAGS)
+CPPFLAGS  +=  $(PYTHONCFLAGS)
 EXTRALIBS  = $(ROOTLIBS)
 EXTRALIBS += $(RATLIBS)
 EXTRALIBS += $(BOOSTLIBS)
 EXTRALIBS += -L$(PWD)/lib -lcnpy -lz
+EXTRALIBS += $(PYTHONLIBS)
 
 SRCS = $(wildcard $(SRCDIR)/*.cc)
 OBJS = $(subst .cc,.o,$(SRCS))
@@ -48,7 +54,7 @@ all: TemplateAnalysis
 # TARGETLIB ?= LL
 # TARGETLIB ?= EVFunctions
 # TARGETLIB ?= HitFunctions
-# TARGETLIB ?= MCFunctions
+TARGETLIB ?= MCFunctions
 TARGETLIB ?= AnalyzerFunctions
 
 lib$(TARGETLIB).so: $(TARGETLIB).o
@@ -106,6 +112,10 @@ CreatePDF: CreatePDF.o $(OBJS)
 FlattenHits: FlattenHits.o $(OBJS)
 	$(CXX) $(CPPFLAGS) -o FlattenHits FlattenHits.cc $(OBJS) $(EXTRALIBS)
 	$(RM) FlattenHits.o $(OBJS)
+
+ReconHits: ReconHits.o $(OBJS)
+	$(CXX) $(CPPFLAGS) -o ReconHits ReconHits.cc $(OBJS) $(EXTRALIBS)
+	$(RM) ReconHits.o $(OBJS)
 
 clean:
 	$(RM) $(OBJS) TemplateAnalysis TemplateAnalysisMT EventWrapper PlotCollectedPE CreateEResMatrix CreatePosMatrix PlotPEVSNHits VtxRecon SelectIBD CreatePDF FlattenHits

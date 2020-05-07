@@ -37,6 +37,7 @@
 #include "HitFunctions.hh"
 #include "ProgressBar.hpp"
 
+#define SoL 224.9 // mm/ns
 #define SQRT5 2.2360679775
 #define SQRT2 1.41421356237
 
@@ -58,7 +59,7 @@ TH1D *GetHPDF(const char *filename, const char *histname) {
 
 void ScaleSimplexCoord(vector<double> *seed){
 
-  const double scale = 2000. / (2*SQRT2);
+  const double scale = 500. / (2*SQRT2);
 
   for(auto &s: *seed){
 
@@ -68,8 +69,67 @@ void ScaleSimplexCoord(vector<double> *seed){
 
 }
 
-vector<double> FitAndGetBestPoint(const vector<Hit>& vHit){
+double CalculateProb(TH1D *hPDF, TH1D *hExp, double *Chi2 = NULL, int *NdF = NULL){
 
+  auto nBins = hPDF->GetNbinsX();
+
+  auto N = hExp->Integral();
+  auto W = hPDF->GetSumOfWeights();
+  auto normW = 2*W*W;
+
+  double chi2 = 0.;
+  int NonNullBin = 0;
+
+  for(int iBin = 1; iBin<=nBins; iBin++){
+
+	double n = hExp->GetBinContent(iBin);
+	double w = hPDF->GetBinContent(iBin);
+
+	if(n == 0 || w == 0) continue;
+
+	double s2 = pow(hPDF->GetBinError(iBin),2);
+	double res = W*w - N*s2;
+
+	double P = res + sqrt(pow(res, 2) + 4*W*W*s2*s2*n);
+	if(P == 0) continue;
+	P/=normW;
+
+	chi2+=pow(n - N*P,2)/(N*P) + pow(w - W*P,2)/s2;
+	NonNullBin++;
+
+  }
+
+  *Chi2=chi2;
+  *NdF=NonNullBin-1;
+
+  return TMath::Prob(chi2, NonNullBin-1);
+
+
+}
+
+TH1D *GetBestFitHTResids(const vector<double> vBP, TH1D *hPDF,
+						 TVector3 POS_TRUTH, double T_TRUTH,
+						 const vector<Hit> vHit,
+						 unsigned iEvt = 0){
+
+  TVector3 POS_GUESS(vBP[0], vBP[1], vBP[2]);
+  double T_GUESS(vBP[3]);
+
+  auto nBins = hPDF->GetNbinsX();
+  auto minTResids = hPDF->GetXaxis()->GetXmin();
+  auto maxTResids = hPDF->GetXaxis()->GetXmax();
+
+  auto *hTResidsGuess = new TH1D(Form("hBFEvt#%d", iEvt), "",
+								 nBins, minTResids, maxTResids);
+  hTResidsGuess->Reset();
+
+  for (auto hit: vHit) {
+
+	hTResidsGuess->Fill(hit.CalculateTResid(POS_TRUTH+POS_GUESS, SoL) - (T_TRUTH + T_GUESS));
+
+  }
+
+  return hTResidsGuess;
 }
 
 void ShowUsage(string name){

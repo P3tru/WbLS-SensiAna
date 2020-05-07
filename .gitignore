@@ -11,6 +11,7 @@ SelectIBD
 CreatePDF
 PECounting
 FlattenHits
+ReconHits
 
 # Inputs
 *.txt
@@ -25,3 +26,4 @@ FlattenHits
 Blackhole.C
 FitMacro.C
 ProgressBar.hpp
+include/cnpy.h

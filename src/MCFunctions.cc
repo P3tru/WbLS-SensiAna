@@ -355,6 +355,53 @@ double SumdEdX(vector<ComplexParticle> vCP){
   return dEdX;
 }
 
+vector<ComplexParticle> GetdEdX(Analyzer *fAnalyzer, unsigned int iEvt, const string& sPartName){
+
+  auto * mc = GetRATMCOnEvt(fAnalyzer, iEvt);
+  auto NbTracks = mc->GetMCTrackCount();
+
+  vector<ComplexParticle> vPart;
+
+  for(auto iTrack=0; iTrack<NbTracks; iTrack++){
+
+	auto * mctrack = mc->GetMCTrack(iTrack);
+
+	if(IsParticle(mctrack, sPartName)){
+
+	  ComplexParticle cP;
+	  cP.SetName(sPartName);
+	  GetPartInfoFromTrackStep(&cP, mctrack);
+	  GetPartIDFromTrackStep(&cP, mctrack);
+
+	  auto NbTrackSteps = mctrack->GetMCTrackStepCount();
+
+	  auto dE=0.;
+	  auto dX=0.;
+
+	  for(auto iStep=1; iStep<NbTrackSteps; iStep++){
+
+		auto *mctrackstep = mctrack->GetMCTrackStep(iStep);
+
+		dE +=mctrackstep->GetKE();
+		dX += abs(mctrackstep->GetLength());
+
+		Step S(abs(mctrackstep->GetKE() - cP.GetKinE()),abs(mctrackstep->GetLength()));
+		cP.AddStep(S);
+
+	  }
+
+	  cP.ELoss(dE);
+	  cP.AddTrackLength(dX);
+	  vPart.emplace_back(cP);
+
+	}
+
+  }
+
+  return vPart;
+
+}
+
 vector<ComplexParticle> GetProtonLY(Analyzer *fAnalyzer, unsigned int iEvt){
 
   auto * mc = GetRATMCOnEvt(fAnalyzer, iEvt);

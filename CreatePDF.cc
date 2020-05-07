@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
   auto User_Dir_zz = DBL_MIN;
 
   // Scaling?
-  auto User_isScaling = false;
+  auto User_isScaling = true;
 
   ProcessArgs(&theApp,
 			  &inputName,&listName,
@@ -205,8 +205,8 @@ int main(int argc, char *argv[]) {
 	  hTResiduals->Sumw2();
 
 	auto *hCTheta = new TH1D(Form("hCTheta%s",cTag), "cos#theta hits",
-							 nCThetaBins, minCTheta, maxCTheta);
-							 // vCTBins.size()-1,&vCTBins[0]);
+							 // nCThetaBins, minCTheta, maxCTheta);
+							 vCTBins.size()-1,&vCTBins[0]);
 
 	SetBasicTH1Style(hCTheta, kBlue-4);
 	if(isScaling)
@@ -228,8 +228,8 @@ int main(int argc, char *argv[]) {
 
 	auto *hTResVSCosTheta = new TH2D(Form("hTResVSCosTheta%s",cTag), "hTRes VS Cos #theta",
 									 nbBinsTRes, minTRes, maxTRes,
-									 nCThetaBins, minCTheta, maxCTheta);
-									 // vCTBins.size()-1,&vCTBins[0]);
+									 // nCThetaBins, minCTheta, maxCTheta);
+									 vCTBins.size()-1,&vCTBins[0]);
 
 	if(isScaling)
 	  hTResVSCosTheta->Sumw2();
@@ -269,15 +269,15 @@ int main(int argc, char *argv[]) {
 
     if(nAnalyzer == 1){
 
-	  auto *c1 = PlotAHist(vHTRes[0], "");
+	  PlotAHist(vHTRes[0], "");
 
-	  auto *c5 = PlotAHist(vHCT[0],"");
+	  PlotAHist(vHCT[0],"");
 
-	  auto *c2 = PlotAHist(vHTResVSCTheta[0], "COLZ");
+	  PlotAHist(vHTResVSCTheta[0], "COLZ");
 
-	  auto *c3 = PlotAHist(vHNHits[0], "");
+	  PlotAHist(vHNHits[0], "");
 
-	  auto *c4 = PlotAHist(vHQ[0], "");
+	  PlotAHist(vHQ[0], "");
 
     }
 

@@ -21,6 +21,8 @@ endif()
 
 find_package(Boost 1.57.0 COMPONENTS system filesystem REQUIRED)
 
+find_package(PythonLibs REQUIRED)
+
 #----------------------------------------------------------------------------
 # Locate sources and headers for this project
 # ## NOT NEEDED FOR DICT
@@ -29,6 +31,7 @@ include_directories(
         ${ROOT_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         $ENV{RATROOT}/include
+        ${PYTHON_INCLUDE_DIRS}
 )
 
 #----------------------------------------------------------------------------
@@ -84,6 +87,11 @@ target_link_libraries(CreatePDF ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
 add_executable(FlattenHits FlattenHits.cc ${sources} ${headers})
 target_link_libraries(FlattenHits ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent)
 
+add_executable(ReconHits ReconHits.cc ${sources} ${headers})
+target_link_libraries(ReconHits ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent ${PYTHON_LIBRARIES})
+
+
+
 add_executable(FitMacro FitMacro.C ${sources} ${headers})
 target_link_libraries(FitMacro ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -lEVFunctions -lHitFunctions -lLL)
 
@@ -98,3 +106,6 @@ target_link_libraries(PMatrix ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -l
 
 add_executable(ProfileTResCosT ProfileTResCosT.C ${sources} ${headers})
 target_link_libraries(ProfileTResCosT ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -lEVFunctions -lHitFunctions -lLL)
+
+add_executable(dE dE.C ${sources} ${headers})
+target_link_libraries(dE ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -lEVFunctions -lHitFunctions -lLL)
