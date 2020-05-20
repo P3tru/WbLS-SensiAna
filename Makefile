@@ -50,11 +50,11 @@ help:
 
 all: TemplateAnalysis
 
-# TARGETLIB ?= CalibFunctions
-# TARGETLIB ?= LL
-# TARGETLIB ?= EVFunctions
-# TARGETLIB ?= HitFunctions
-TARGETLIB ?= MCFunctions
+#TARGETLIB ?= CalibFunctions
+#TARGETLIB ?= LL
+#TARGETLIB ?= EVFunctions
+#TARGETLIB ?= HitFunctions
+#TARGETLIB ?= MCFunctions
 TARGETLIB ?= AnalyzerFunctions
 
 lib$(TARGETLIB).so: $(TARGETLIB).o

@@ -27,11 +27,11 @@ bool operator==(G4Particle const& a, G4Particle const& b){
 
 RAT::DS::MC * GetRATMCOnEvt(Analyzer *fAnalyzer, unsigned int iEvt){
 
-  fAnalyzer->GetTreeMc()->GetEntry(iEvt);
+  fAnalyzer->GetTree()->GetEntry(iEvt);
 
   // Access RAT MC info and the summary
   // Summary useful to get nCer photons, nScint photons, etc...
-  return fAnalyzer->GetRds()->GetMC();
+  return fAnalyzer->GetDS()->GetMC();
 
 }
 
@@ -76,6 +76,7 @@ vector<FlatPhoton> GetPhotonsFromEvt(RAT::DS::MC * mc){
 vector<Hit> GetMCHitCollection(Analyzer *fAnalyzer, unsigned int iEvt, bool isSource){
 
   RAT::DS::MC * mc = GetRATMCOnEvt(fAnalyzer, iEvt);
+  RAT::DS::MCParticle *prim = mc->GetMCParticle(0);
 
   vector<Hit> vHit;
 
@@ -119,8 +120,8 @@ vector<Hit> GetMCHitCollection(Analyzer *fAnalyzer, unsigned int iEvt, bool isSo
 			auto WL = p.GetWl();
 
 			vHit.emplace_back(Hit(PMTPos, Q, T,
-								  TVector3(0.,0.,0.),
-								  TVector3(0.,0.,0.),
+								  prim->GetPosition(),
+								  prim->GetMomentum().Unit(),
 								  CreaProc, WL));
 
 			break;
@@ -135,7 +136,9 @@ vector<Hit> GetMCHitCollection(Analyzer *fAnalyzer, unsigned int iEvt, bool isSo
 		// FILL EVENT //
 		// ########## //
 
-		vHit.emplace_back(Hit(PMTPos, Q, T));
+		vHit.emplace_back(Hit(PMTPos, Q, T,
+							  prim->GetPosition(),
+							  prim->GetMomentum().Unit()));
 
 	  }
 

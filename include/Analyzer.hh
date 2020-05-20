@@ -21,6 +21,7 @@ class Analyzer {
  protected:
   TFile *fMC;
   TTree *treeMC;
+  string treeName;
   RAT::DS::Root *rds;
 
   RAT::DS::Run *run;
@@ -35,27 +36,42 @@ class Analyzer {
 
   Analyzer(TFile *f_mc,
 		   TTree *tree_mc,
+		   const string &tree_name,
 		   RAT::DS::Root *rds,
 		   RAT::DS::Run *run,
 		   TTree *run_tree,
 		   unsigned long n_evts,
 		   const string &tag)
-	  : fMC(f_mc), treeMC(tree_mc), rds(rds), run(run), runTree(run_tree), nEvts(n_evts), tag(tag) {
+	  : fMC(f_mc),
+		treeMC(tree_mc),
+		treeName(tree_name),
+		rds(rds),
+		run(run),
+		runTree(run_tree),
+		nEvts(n_evts),
+		tag(tag) {}
 
-  }
-
-  explicit Analyzer(const char* filename, const string &tag=""){
-
-	if(tag.empty())
-	  Analyzer::tag.clear();
-	else
-	  Analyzer::tag = tag;
+  explicit Analyzer(const char* filename){
 
 	SetAnalyzer(filename);
 
   }
 
-  void SetAnalyzer(const char *filename){
+  Analyzer(const char* filename, const char* treeName){
+
+	SetAnalyzer(filename, treeName);
+
+  }
+
+  Analyzer(const char* filename, const char* treeName, string tag)
+	  : tag(std::move(tag)) {
+
+	SetAnalyzer(filename, treeName);
+
+  }
+
+
+  void SetAnalyzer(const char *filename, const char* treeName="T"){
 
 	Analyzer::fMC = new TFile(filename);
 
@@ -71,7 +87,7 @@ class Analyzer {
 	  Analyzer::runTree->SetBranchAddress("run", &run);
 	  Analyzer::runTree->GetEntry(0);
 
-	  Analyzer::treeMC = (TTree *) Analyzer::fMC->Get("T");
+	  Analyzer::treeMC = (TTree *) Analyzer::fMC->Get(treeName);
 
 	  Analyzer::rds = new RAT::DS::Root();
 	  Analyzer::treeMC->SetBranchAddress("ds", &rds);
@@ -94,33 +110,17 @@ class Analyzer {
 
   }
 
-  TFile *GetFmc() const {
-	return fMC;
-  }
-  TTree *GetTreeMc() const {
-	return treeMC;
-  }
-  RAT::DS::Root *GetRds() const {
-	return rds;
-  }
+  TFile *GetfMC() const { return fMC; }
+  TTree *GetTree() const { return treeMC; }
+  RAT::DS::Root *GetDS() const { return rds; }
 
-  unsigned long GetNEvts() const {
-	return nEvts;
-  }
+  unsigned long GetNEvts() const { return nEvts; }
 
-  RAT::DS::Run *GetRun() const {
-	return run;
-  }
-  TTree *GetRunTree() const {
-	return runTree;
-  }
+  RAT::DS::Run *GetRun() const { return run; }
+  TTree *GetRunTree() const { return runTree; }
 
-  const string &GetTag() const {
-	return tag;
-  }
-  void SetTag(const string &tag) {
-	Analyzer::tag = tag;
-  }
+  const string &GetTag() const { return tag; }
+  void SetTag(const string &tag) { Analyzer::tag = tag; }
 
 };
 

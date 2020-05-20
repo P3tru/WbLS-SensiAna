@@ -22,21 +22,24 @@
 
 /////////////////////////   RAT   ///////////////////////////
 
+/////////////////////////   USER  ///////////////////////////
+#include "LL.hh"
+
 using namespace std;
 
 #define SQRT2 1.41421356237
 
-// void loadlibs(){
+void loadlibs(){
 
-//   R__LOAD_LIBRARY(libEVFunctions.so);
-//   R__LOAD_LIBRARY(libMCFunctions.so);
-//   R__LOAD_LIBRARY(libHitFunctions.so);
-//   R__LOAD_LIBRARY(libLL.so);
-//   R__LOAD_LIBRARY(libCalibFunctions.so);
-//   R__LOAD_LIBRARY(libAnalyzerFunctions.so);
-//   R__LOAD_LIBRARY(libcnpy.so);
+  R__LOAD_LIBRARY(libEVFunctions.so);
+  R__LOAD_LIBRARY(libMCFunctions.so);
+  R__LOAD_LIBRARY(libHitFunctions.so);
+  R__LOAD_LIBRARY(libLL.so);
+  R__LOAD_LIBRARY(libCalibFunctions.so);
+  R__LOAD_LIBRARY(libAnalyzerFunctions.so);
+  R__LOAD_LIBRARY(libcnpy.so);
 
-// }
+}
 
 static string ExtractFilenameFromPath(string pathname){
 
@@ -270,6 +273,48 @@ TCanvas *PlotAHist(T *h, const char *opt=""){
   c1->SetGrid();
   h->Draw(opt);
   return c1;
+
+}
+
+template <typename T>
+double CalculateNLL(T const *hPDF, T const *hExp){
+
+  if(!hPDF || !hExp)
+	return -1;
+
+  if(hPDF->GetEntries() == 0 || hExp->GetEntries() == 0)
+	return -1;
+
+  auto normPDF = hPDF->GetMaximum();
+  auto normEXP = hExp->GetMaximum();
+
+  auto hPDF_Scaled = dynamic_cast<T*>(hPDF->Clone());
+  hPDF_Scaled->Scale(1/normPDF);
+  auto hExp_Scaled = dynamic_cast<T*>(hExp->Clone());
+  hExp_Scaled->Scale(1/normEXP);
+
+  auto nBinsX = hPDF_Scaled->GetNbinsX();
+  auto nBinsY = hPDF_Scaled->GetNbinsY();
+
+  auto NLL = 0.;
+
+  auto NonNullBin = 0;
+
+  for(auto iBinX=1; iBinX<=nBinsX; iBinX++){
+	for(auto iBinY=1; iBinY<=nBinsY; iBinY++) {
+
+	  auto nObs  = hExp_Scaled->GetBinContent(hExp_Scaled->GetBin(iBinX, iBinY));
+	  auto nPred = hPDF_Scaled->GetBinContent(hPDF_Scaled->GetBin(iBinX, iBinY));
+
+	  if(nObs == 0 || nPred == 0) continue;
+
+	  NLL += EvalNLL(nObs,nPred);
+	  NonNullBin++;
+
+	}
+  }
+
+  return NLL/(double)(NonNullBin);
 
 }
 

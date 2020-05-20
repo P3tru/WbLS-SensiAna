@@ -57,6 +57,10 @@ class MCCalib{
   double maxPE;
   double maxHits;
 
+  double minE;
+  double minPE;
+  double minHits;
+
  public:
 
   MCCalib() = default;
@@ -139,42 +143,32 @@ class MCCalib{
 	  maxPE   = vMuPE[vMuPE.size()-1].second;
 	  maxHits = vMuHits[vMuHits.size()-1].second;
 
+	  minE    = vMuPE[0].first;
+	  minPE   = vMuPE[0].second;
+	  minHits = vMuHits[0].second;
+
 	  cout << "MCCalib(): maxE=" << maxE << " maxPE=" << maxPE << " maxHits=" << maxHits << endl;
+	  cout << "MCCalib(): minE=" << minE << " minPE=" << minPE << " minHits=" << minHits << endl;
 
 	}
 
   }
 
-  TGraph *GetGrMuPe() const {
-	return grMuPE;
-  }
-  TGraph *GetGrSigPe() const {
-	return grSigPE;
-  }
-  TGraph *GetGrMuHits() const {
-	return grMuHits;
-  }
-  TGraph *GetGrSigHits() const {
-	return grSigHits;
-  }
+  TGraph *GetGrMuPe() const { return grMuPE; }
+  TGraph *GetGrSigPe() const { return grSigPE; }
+  TGraph *GetGrMuHits() const { return grMuHits; }
+  TGraph *GetGrSigHits() const { return grSigHits; }
 
-  const string &GetFilename() const {
-	return filename;
-  }
+  const string &GetFilename() const { return filename; }
 
-  const vector<double> &GetEBins() const {
-	return EBins;
-  }
+  const vector<double> &GetEBins() const { return EBins; }
 
-  double GetMaxE() const {
-	return maxE;
-  }
-  double GetMaxPe() const {
-	return maxPE;
-  }
-  double GetMaxHits() const {
-	return maxHits;
-  }
+  double GetMaxE() const { return maxE; }
+  double GetMaxPe() const { return maxPE; }
+  double GetMaxHits() const { return maxHits; }
+  double GetMinE() const { return minE; }
+  double GetMinPe() const { return minPE; }
+  double GetMinHits() const { return minHits; }
 
 };
 

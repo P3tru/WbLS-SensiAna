@@ -109,3 +109,9 @@ target_link_libraries(ProfileTResCosT ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRAT
 
 add_executable(dE dE.C ${sources} ${headers})
 target_link_libraries(dE ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -lEVFunctions -lHitFunctions -lLL)
+
+add_executable(PlotQVSNHits.C macros/PlotQVSNHits.C ${sources} ${headers})
+target_link_libraries(PlotQVSNHits.C ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -lEVFunctions -lHitFunctions -lLL)
+
+add_executable(PlotTResCos.C macros/PlotTResCos.C ${sources} ${headers})
+target_link_libraries(PlotTResCos.C ${ROOT_LIBRARIES} ${Boost_LIBRARIES} -lRATEvent -lEVFunctions -lHitFunctions -lLL -lMCFunctions -lCalibFunctions -lAnalyzerFunctions)

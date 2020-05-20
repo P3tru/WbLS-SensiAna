@@ -19,13 +19,9 @@
 
 using namespace std;
 
-class THit {
-
-};
-
 class Hit {
 
- protected:
+protected:
   TVector3 Pos;
 
   double Q;
@@ -36,48 +32,95 @@ class Hit {
 
   TVector3 TrueOrigin;
   TVector3 TrueDir;
+  double TrueParticleTime;
+
+  int EVID;
 
   int TrueProcess;
   double TrueWL;
 
- public:
+public:
   Hit()
-	  : Pos(TVector3(0.,0.,0.)) ,
-		Q(-1), T(-1),
-		TResid(-1), D(-1),
-		TrueOrigin(TVector3(0.,0.,0.)), TrueDir(TVector3(0.,0.,0.)),
-		TrueProcess(-1), TrueWL(-1.) { }
-  Hit(const TVector3 &pos)
-	  : Pos(pos),
-		Q(-1), T(-1),
-		TResid(-1), D(-1),
-		TrueOrigin(TVector3(0.,0.,0.)), TrueDir(TVector3(0.,0.,0.)),
-		TrueProcess(-1), TrueWL(-1.) { }
+    : Pos(TVector3(0.,0.,0.)) ,
+      Q(-1), T(-1),
+	  EVID(-1),
+      TResid(-1), D(-1),
+      TrueOrigin(TVector3(0.,0.,0.)), TrueDir(TVector3(0.,0.,0.)),
+      TrueParticleTime(-1),
+      TrueProcess(-1), TrueWL(-1.) { }
+  explicit Hit(const TVector3 &pos)
+    : Pos(pos),
+      Q(-1), T(-1),
+	  EVID(-1),
+      TResid(-1), D(-1),
+      TrueOrigin(TVector3(0.,0.,0.)), TrueDir(TVector3(0.,0.,0.)),
+      TrueParticleTime(-1),
+      TrueProcess(-1), TrueWL(-1.) { }
   Hit(const TVector3 &pos, double q, double t)
-	  : Pos(pos),
-		Q(q), T(t),
-		TResid(-1), D(-1),
-		TrueOrigin(TVector3(0.,0.,0.)), TrueDir(TVector3(0.,0.,0.)),
-		TrueProcess(-1), TrueWL(-1.) { }
+    : Pos(pos),
+      Q(q), T(t),
+	  EVID(-1),
+      TResid(-1), D(-1),
+      TrueOrigin(TVector3(0.,0.,0.)), TrueDir(TVector3(0.,0.,0.)),
+      TrueParticleTime(-1),
+      TrueProcess(-1), TrueWL(-1.) { }
+  Hit(const TVector3 &pos, double q, double t, int evid)
+    : Pos(pos),
+      Q(q), T(t),
+      EVID(evid),
+      TResid(-1), D(-1),
+      TrueOrigin(TVector3(0.,0.,0.)), TrueDir(TVector3(0.,0.,0.)),
+      TrueParticleTime(-1),
+      TrueProcess(-1), TrueWL(-1.) { }
   Hit(const TVector3 &pos, double q, double t, int true_process, double true_wl)
-	  : Pos(pos),
-		Q(q), T(t),
-		TResid(-1), D(-1),
-		TrueOrigin(TVector3(0.,0.,0.)), TrueDir(TVector3(0.,0.,0.)),
-		TrueProcess(true_process), TrueWL(true_wl) { }
+    : Pos(pos),
+      Q(q), T(t),
+	  EVID(-1),
+      TResid(-1), D(-1),
+      TrueOrigin(TVector3(0.,0.,0.)), TrueDir(TVector3(0.,0.,0.)),
+      TrueParticleTime(-1),
+      TrueProcess(true_process), TrueWL(true_wl) { }
   Hit(const TVector3 &pos, double q, double t, const TVector3 &true_origin, const TVector3 &true_dir)
-	  : Pos(pos), Q(q), T(t),
-		TResid(-1), D(-1),
-		TrueOrigin(true_origin), TrueDir(true_dir),
-		TrueProcess(-1), TrueWL(-1.) { }
-  Hit(const TVector3 &pos,
-	  double q, double t,
-	  const TVector3 &true_origin, const TVector3 &true_dir,
-	  int true_process, double true_wl)
-	  : Pos(pos),
+    : Pos(pos),
 	  Q(q), T(t),
+	  EVID(-1),
+      TResid(-1), D(-1),
+      TrueOrigin(true_origin), TrueDir(true_dir),
+      TrueParticleTime(-1),
+      TrueProcess(-1), TrueWL(-1.) { }
+  Hit(const TVector3 &pos,
+      double q, double t,
+      const TVector3 &true_origin, const TVector3 &true_dir,
+      int true_process, double true_wl)
+    : Pos(pos),
+      Q(q), T(t),
+	  EVID(-1),
 	  TrueOrigin(true_origin), TrueDir(true_dir),
-	  TrueProcess(true_process), TrueWL(true_wl) {}
+      TrueParticleTime(-1),
+      TrueProcess(true_process), TrueWL(true_wl) {}
+  Hit(const TVector3 &pos,
+      double q, double t,
+      const TVector3 &true_origin, const TVector3 &true_dir,
+      double true_time,
+      int true_process, double true_wl)
+    : Pos(pos),
+      Q(q), T(t),
+	  EVID(-1),
+      TrueOrigin(true_origin), TrueDir(true_dir),
+      TrueParticleTime(true_time),
+      TrueProcess(true_process), TrueWL(true_wl) {}
+  Hit(const TVector3 &pos,
+      double q, double t,
+      int evid,
+      const TVector3 &true_origin, const TVector3 &true_dir,
+      double true_time,
+      int true_process, double true_wl)
+    : Pos(pos),
+      Q(q), T(t),
+      EVID(evid),
+      TrueOrigin(true_origin), TrueDir(true_dir),
+      TrueParticleTime(true_time),
+      TrueProcess(true_process), TrueWL(true_wl) {}
 
   const TVector3 &GetPos() const { return Pos; }
   void SetPos(const TVector3 &pos) { Pos = pos; }
@@ -86,6 +129,9 @@ class Hit {
   void SetQ(double x){ Q = x; };
   double GetT(){ return T; };
   void SetT(double x){ T = x; };
+
+  int GetEvid() const { return EVID; }
+  void SetEvid(int evid) { EVID = evid; }
 
   double GetTResid() const { return TResid; }
   void SetTResid(double t_resid) { TResid = t_resid; }
@@ -97,20 +143,23 @@ class Hit {
   const TVector3 &GetTrueDir() const { return TrueDir; }
   void SetTrueDir(const TVector3 &true_dir) { TrueDir = true_dir; }
 
+  double GetTrueParticleTime() const { return TrueParticleTime; }
+  void SetTrueParticleTime(double true_particle_time) { TrueParticleTime = true_particle_time; }
+
   int GetTrueProcess() const { return TrueProcess; }
   void SetTrueProcess(int true_process) { TrueProcess = true_process; }
   double GetTrueWl() const { return TrueWL; }
   void SetTrueWl(double true_wl) { TrueWL = true_wl; }
 
   double CalculateDistance(const TVector3& Origin = TVector3(0,0,0)){
-	return TVector3(Pos-Origin).Mag();
+    return TVector3(Pos-Origin).Mag();
   };
   double CalculateTResid(const TVector3& Origin = TVector3(0,0,0), double SoL = 299.792458){
-	return T - CalculateDistance(Origin)/SoL;
+    return T - CalculateDistance(Origin)/SoL;
   };
 
   double CalcuateCosTHit(const TVector3& Origin = TVector3(0,0,0),
-						 const TVector3& Dir = TVector3(0,0,0)){
+			 const TVector3& Dir = TVector3(0,0,0)){
     return cos(Dir.Angle(Pos-Origin));
   }
 
@@ -125,15 +174,16 @@ class Hit {
   void operator-=(Hit rhs) { SetT(T-rhs.GetT()); }
 
   void Print() const {
-	cout << "X: " << Pos.x()
-		 << " Y: " << Pos.y()
-		 << " Z: " << Pos.z()
-		 << " Q: " << Q
-		 << " T: " << T << endl;
+    cout << "X: " << Pos.x()
+	 << " Y: " << Pos.y()
+	 << " Z: " << Pos.z()
+	 << " Q: " << Q
+	 << " T: " << T << endl;
   }
   void PrintTrue() const {
     TrueOrigin.Print();
     TrueDir.Print();
+    cout << TrueParticleTime << endl;
   }
 
 };
@@ -144,17 +194,17 @@ Hit operator+(Hit h1, Hit h2);
 
 class HitCut{
 
- public:
+public:
   Hit hCut;
 
   explicit HitCut(const Hit &h_cut) : hCut(h_cut) {}
 
   int operator()(Hit h){
-	bool YesItIs = false;
-	if(h>hCut){
-	  YesItIs = true;
-	}
-	return YesItIs;
+    bool YesItIs = false;
+    if(h>hCut){
+      YesItIs = true;
+    }
+    return YesItIs;
   }
 
 };

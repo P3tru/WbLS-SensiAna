@@ -75,8 +75,8 @@ void LoopAndFillHistos(Analyzer *FileAnalyzer,
 	// record Prim particle info
 	FlatParticle PrimPart = GetPrimaryParticleInfo(FileAnalyzer, iEvt);
 	double PrimPartKE = PrimPart.GetKinE();
-	TVector3 TrueOrigin = PrimPart.GetPos();
-	TVector3 TrueDir = PrimPart.GetDir().Unit();
+	const TVector3& TrueOrigin = PrimPart.GetPos();
+	auto TrueDir = PrimPart.GetDir().Unit();
 
 	// recover EV info
 	double NHits, Q;
@@ -86,7 +86,8 @@ void LoopAndFillHistos(Analyzer *FileAnalyzer,
 
 	// Recover Hit vector for 1 evt
 	// vector<Hit> vHit;
-	vector<Hit> vHit = GetEVHitCollection(FileAnalyzer, iEvt);
+	// vector<Hit> vHit = GetEVHitCollection(FileAnalyzer, iEvt);
+	vector<Hit> vHit = GetMCHitCollection(FileAnalyzer, iEvt);
 	SortVHits(&vHit);
 
 	// Apply cuts if defined
@@ -107,9 +108,10 @@ void LoopAndFillHistos(Analyzer *FileAnalyzer,
 	}
 
 	// Fill histograms
-	if(vHit.size()>0){
+	if(!vHit.empty()){
 
-	  FillAll(hTRes, hCTheta,hTResVSCT, vHit,
+	  FillAll(hTRes, hCTheta, hTResVSCT,
+			  vHit,
 			  TrueOrigin,
 			  SOL,
 			  TrueDir);
@@ -126,11 +128,11 @@ void LoopAndFillHistos(Analyzer *FileAnalyzer,
 
 		SortVHits(&vHit);
 
-		if(vHit.size()>0) {
+		if(!vHit.empty()) {
 		  RemoveHitsAfterCut(vHit, Hit(TVector3(), 0., vHit[0].GetT() + *it));
 		}
 
-		if(vHit.size()>0) {
+		if(!vHit.empty()) {
 
 		  FillResiduals(vhTResiduals[pos], vHit,
 						TrueOrigin,
@@ -217,8 +219,6 @@ void ProcessArgs(TApplication *theApp,
 				 int *User_nEvts, int *User_iEvt,
 				 int *User_nTResidBins, double *User_minTResid, double *User_maxTResid,
 				 int *User_nCThetaBins, double *User_minCTheta, double *User_maxCTheta,
-				 double *User_xx, double *User_yy, double *User_zz,
-				 double *User_Dir_xx, double *User_Dir_yy, double *User_Dir_zz,
 				 bool *User_isBatch,
 				 string *outputname) {
 
@@ -259,20 +259,6 @@ void ProcessArgs(TApplication *theApp,
 	  *User_minCTheta = stod(theApp->Argv(++i));
 	} else if (boost::iequals(arg, "-CosTMax")) {
 	  *User_maxCTheta = stod(theApp->Argv(++i));
-
-	} else if (boost::iequals(arg, "-xx")) {
-	  *User_xx = stod(theApp->Argv(++i));
-	} else if (boost::iequals(arg, "-yy")) {
-	  *User_yy = stod(theApp->Argv(++i));
-	} else if (boost::iequals(arg, "-zz")) {
-	  *User_zz = stod(theApp->Argv(++i));
-
-	} else if (boost::iequals(arg, "-dir-xx")) {
-	  *User_Dir_xx = stod(theApp->Argv(++i));
-	} else if (boost::iequals(arg, "-dir-yy")) {
-	  *User_Dir_yy = stod(theApp->Argv(++i));
-	} else if (boost::iequals(arg, "-dir-zz")) {
-	  *User_Dir_zz = stod(theApp->Argv(++i));
 
 	} else if (boost::iequals(arg, "-b")) {
 	  *User_isBatch=true;

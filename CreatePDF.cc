@@ -73,16 +73,6 @@ int main(int argc, char *argv[]) {
   // Select time cut for computing residuals
   auto User_PromptCut = INT_MIN;
 
-  // Set True Pos
-  auto User_xx = DBL_MIN;
-  auto User_yy = DBL_MIN;
-  auto User_zz = DBL_MIN;
-
-  // Set True Dir
-  auto User_Dir_xx = DBL_MIN;
-  auto User_Dir_yy = DBL_MIN;
-  auto User_Dir_zz = DBL_MIN;
-
   // Scaling?
   auto User_isScaling = true;
 
@@ -93,8 +83,6 @@ int main(int argc, char *argv[]) {
 			  &User_nEvts, &User_iEvt,
 			  &User_nTResidBins, &User_minTResid, &User_maxTResid,
 			  &User_nCThetaBins, &User_minCTheta, &User_maxCTheta,
-			  &User_xx, &User_yy, &User_zz,
-			  &User_Dir_xx, &User_Dir_yy, &User_Dir_zz,
 			  &User_isBatch,
 			  &outputName);
 
@@ -119,16 +107,6 @@ int main(int argc, char *argv[]) {
   const int nCThetaBins = SetDefValue(User_nCThetaBins, 24);
   const double minCTheta= SetDefValue(User_minCTheta, -1.); // costheta
   const double maxCTheta = SetDefValue(User_maxCTheta, 1.); // costheta
-
-  const double xx = SetDefValue(User_xx, 0.); // mm
-  const double yy = SetDefValue(User_yy, 0.); // mm
-  const double zz = SetDefValue(User_zz, 0.); // mm
-  const TVector3 TrueOrigin(xx,yy,zz);
-
-  const double Dir_xx = SetDefValue(User_Dir_xx, 0.); // mm
-  const double Dir_yy = SetDefValue(User_Dir_yy, 0.); // mm
-  const double Dir_zz = SetDefValue(User_Dir_zz, 0.); // mm
-  const TVector3 TrueDir(Dir_xx,Dir_yy,Dir_zz);
 
   const string outName = outputName.empty() ? "Output_PDF.root" : outputName;
 
